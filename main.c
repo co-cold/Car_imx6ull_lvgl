@@ -6,10 +6,19 @@
 #include <pthread.h>
 #include <time.h>
 #include <sys/time.h>
+#include <getopt.h>
+#include <string.h>
 
 #include "gui_guider.h"
 #include "events_init.h"                // 包含事件初始化相关函数声明
 #include "custom.h"                     // 包含自定义功能相关函数声明
+
+// 压力测试相关
+#include "multimedia/player_core.h"
+#define TEST_AUDIO_FILE "/home/debian/music/GET IN THE RING - Thank you for dears.flac"
+#define TEST_VIDEO_FILE "/home/debian/video/犬夜叉片头.avi"
+#define TEST_DURATION 3 // 每次播放的测试时长（秒）
+#define TEST_LOOPS 5    // 测试循环次数
 
 lv_ui guider_ui;                        // 声明GUI Guider生成的UI结构体实例
 
@@ -59,10 +68,199 @@ int lvgl_init()
     // lv_indev_set_cursor(mouse_indev, cursor_obj);             /*Connect the image  object to the driver*/
 }
 
-int main()
+// 模拟视频播放后切换音乐再退出的场景（崩溃场景）
+int test_video_to_music_exit(PlayerCore *pc) {
+    printf("[TEST] Video->Music->Exit...");
+    
+    // 播放视频
+    if (player_core_play_video(pc, TEST_VIDEO_FILE, 800, 450) != 0) {
+        printf(" [FAILED]\n");
+        return -1;
+    }
+    usleep(100000);
+    sleep(2);
+    
+    // 切换到音乐模式
+    if (player_core_play_audio(pc, TEST_AUDIO_FILE) != 0) {
+        printf(" [FAILED]\n");
+        return -1;
+    }
+    sleep(2);
+    
+    // 停止播放
+    player_core_stop(pc);
+    usleep(30000);
+    usleep(100000);
+    
+    printf(" [PASSED]\n");
+    return 0;
+}
+
+// 模拟快速切换测试
+int test_quick_switch(PlayerCore *pc) {
+    printf("[TEST] Quick switch...");
+    
+    for (int i = 0; i < 3; i++) {
+        if (player_core_play_audio(pc, TEST_AUDIO_FILE) != 0) {
+            printf(" [FAILED]\n");
+            return -1;
+        }
+        usleep(500000);
+        
+        if (player_core_play_video(pc, TEST_VIDEO_FILE, 800, 450) != 0) {
+            printf(" [FAILED]\n");
+            return -1;
+        }
+        usleep(500000);
+    }
+    
+    player_core_stop(pc);
+    printf(" [PASSED]\n");
+    return 0;
+}
+
+// 压力测试函数
+int run_stress_test(void) {
+    printf("=========================================\n");
+    printf("Multimedia Module Stress Test\n");
+    printf("Test scenarios simulating custom_media interaction\n");
+    printf("=========================================\n");
+    
+    int failed_tests = 0;
+    int total_tests = 0;
+    
+    // 运行多个测试循环
+    for (int loop = 0; loop < TEST_LOOPS; loop++) {
+        printf("\n--- Test Loop %d/%d ---\n", loop + 1, TEST_LOOPS);
+        
+        // 创建播放器核心
+        PlayerCore *pc = player_core_create();
+        if (!pc) {
+            printf("[ERROR] Failed to create player core\n");
+            return -1;
+        }
+        
+        // 测试1: 视频->音乐->退出（崩溃场景）
+        total_tests++;
+        printf("\n--- Test 1: Video->Music->Exit ---");
+        if (test_video_to_music_exit(pc) != 0) {
+            failed_tests++;
+        }
+        
+        // 测试2: 快速切换
+        total_tests++;
+        printf("--- Test 2: Quick Switch ---");
+        if (test_quick_switch(pc) != 0) {
+            failed_tests++;
+        }
+        
+        // 测试3: 模式切换
+        total_tests++;
+        printf("--- Test 3: Mode Switch ---\n");
+        printf("[TEST] Testing mode switch...");
+        int switch_ok = 1;
+        if (player_core_play_audio(pc, TEST_AUDIO_FILE) != 0) switch_ok = 0;
+        else {
+            sleep(1);
+            if (player_core_play_video(pc, TEST_VIDEO_FILE, 800, 450) != 0) switch_ok = 0;
+            else {
+                usleep(100000);
+                sleep(1);
+                if (player_core_play_audio(pc, TEST_AUDIO_FILE) != 0) switch_ok = 0;
+                else sleep(1);
+            }
+        }
+        player_core_stop(pc);
+        if (switch_ok) printf(" [PASSED]\n");
+        else {
+            printf(" [FAILED]\n");
+            failed_tests++;
+        }
+        
+        // 销毁播放器核心
+        player_core_destroy(pc);
+        printf("--- Loop %d completed --- (%d/%d passed)\n", loop + 1, total_tests - failed_tests, total_tests);
+    }
+    
+    // 测试4: 资源释放
+    total_tests++;
+    printf("\n--- Test 4: Resource Cleanup ---\n");
+    printf("[TEST] Testing resource cleanup...");
+    int cleanup_ok = 1;
+    for (int i = 0; i < 5; i++) {
+        PlayerCore *pc = player_core_create();
+        if (!pc) {
+            cleanup_ok = 0;
+            break;
+        }
+        // 测试视频播放后的资源释放
+        if (player_core_play_video(pc, TEST_VIDEO_FILE, 800, 450) == 0) {
+            usleep(500000);
+            player_core_stop(pc);
+        }
+        player_core_destroy(pc);
+    }
+    if (cleanup_ok) printf(" [PASSED]\n");
+    else {
+        printf(" [FAILED]\n");
+        failed_tests++;
+    }
+    
+    // 输出测试结果
+    printf("\n=========================================\n");
+    printf("Test Results:\n");
+    printf("Total: %d\n", total_tests);
+    printf("Passed: %d\n", total_tests - failed_tests);
+    printf("Failed: %d\n", failed_tests);
+    printf("=========================================\n");
+    
+    return failed_tests > 0 ? -1 : 0;
+}
+
+int main(int argc, char *argv[])
 {
+    // 解析命令行参数
+    int opt;
+    int run_test = 0;
+    
+    while ((opt = getopt(argc, argv, "t")) != -1) {
+        switch (opt) {
+            case 't':
+                run_test = 1;
+                break;
+            default:
+                printf("Usage: %s [-t]\n", argv[0]);
+                printf("  -t    Run stress test\n");
+                return 0;
+        }
+    }
+    
+    // 如果指定了 -t 参数，运行压力测试
+    if (run_test) {
+        return run_stress_test();
+    }
+    
     lvgl_init();
 
+    /* Initialize extra libraries (PNG, JPEG, etc.) */
+    lv_extra_init();
+    printf("LVGL extra libraries initialized\n");
+    
+    // 检查 PNG 解码是否可用
+    #if LV_USE_PNG
+    printf("PNG decoder: enabled\n");
+    #else
+    printf("PNG decoder: disabled\n");
+    #endif
+    
+    // 检查 JPEG 解码是否可用
+    #if LV_USE_SJPG
+    printf("JPEG decoder: enabled\n");
+    #else
+    printf("JPEG decoder: disabled\n");
+    #endif
+    
+    lv_freetype_init(8, 16, 256 * 1024);
     /*Create a Demo*/
     // lv_demo_widgets();
     // lv_demo_music();

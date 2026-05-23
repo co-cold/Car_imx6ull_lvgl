@@ -15,7 +15,10 @@ extern "C" {
 #endif
 
 #include "gui_guider.h"
+#include "custom.h"
 #include "custom_cam.h"
+#include "custom_media.h"
+#include "custom_font.h"
 
 void events_init(lv_ui *ui);
 

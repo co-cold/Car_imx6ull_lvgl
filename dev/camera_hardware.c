@@ -18,7 +18,7 @@ static int v4l2_init_camera(camera_hardware_t *camera);
 static int v4l2_start_capture(camera_hardware_t *camera);
 static int v4l2_stop_capture(camera_hardware_t *camera);
 static void v4l2_cleanup(camera_hardware_t *camera);
-static void yuyv_to_rgb565(camera_hardware_t *camera, uint8_t *yuyv, uint8_t *rgb);
+//static void yuyv_to_rgb565(camera_hardware_t *camera, uint8_t *yuyv, uint8_t *rgb);  // 已注释
 
 // ============ 添加缺少的V4L2缓冲区管理 ============
 typedef struct {
@@ -29,7 +29,8 @@ typedef struct {
 static v4l2_mapped_buffer_t v4l2_buffers[4];
 static int v4l2_buffer_count = 0;
 
-// ============ 添加YUYV到RGB565的转换函数 ============
+// ============ 注释掉YUYV到RGB565的转换函数 ============
+/*
 static void yuyv_to_rgb565(camera_hardware_t *camera, uint8_t *yuyv, uint8_t *rgb)
 {
     int width = camera->config.width;
@@ -70,6 +71,7 @@ static void yuyv_to_rgb565(camera_hardware_t *camera, uint8_t *yuyv, uint8_t *rg
     //     printf("\n");
     // }
 }
+*/
 
 // ============ 完整的V4L2初始化 ============
 static int v4l2_init_camera(camera_hardware_t *camera) 
@@ -91,7 +93,7 @@ static int v4l2_init_camera(camera_hardware_t *camera)
     fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     fmt.fmt.pix.width = camera->config.width;
     fmt.fmt.pix.height = camera->config.height;
-    fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
+    fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_RGB565;
     fmt.fmt.pix.field = V4L2_FIELD_NONE;
     
     if (ioctl(camera->fd, VIDIOC_S_FMT, &fmt) < 0) {
@@ -238,13 +240,15 @@ static void* camera_capture_thread_func(void *arg)
             continue;
         }
         
-        uint8_t *yuyv_data = (uint8_t*)v4l2_buffers[buf.index].start;
+        uint8_t *input_data = (uint8_t*)v4l2_buffers[buf.index].start;
         
         pthread_mutex_lock(&camera->buffer_mutex);
 
         int buf_to_write = buf.index % 2;
         
-        yuyv_to_rgb565(camera, yuyv_data, camera->frame_buffers[buf_to_write]);
+        // 直接复制RGB565数据到输出缓冲区（无需转换）
+        int buffer_size = camera->config.width * camera->config.height * 2;
+        memcpy(camera->frame_buffers[buf_to_write], input_data, buffer_size);
         
         camera->frame_ready[buf_to_write] = true;
         
@@ -285,7 +289,7 @@ static void* camera_capture_thread_func(void *arg)
 }
 
 // ============ 接口函数 V4L2代码 ============
-camera_hardware_t* camera_hw_create(const char *device, int width, int height, int fps) 
+camera_hardware_t* camera_hw_create(const char *device, int width, int height, int fps, camera_format_type_t format) 
 {
     camera_hardware_t *camera = malloc(sizeof(camera_hardware_t));
     if (!camera) return NULL;
@@ -296,6 +300,7 @@ camera_hardware_t* camera_hw_create(const char *device, int width, int height, i
     camera->config.width = width;
     camera->config.height = height;
     camera->config.fps = fps;
+    camera->config.format = format;
     camera->state = CAMERA_HW_IDLE;
     camera->fd = -1;
     
@@ -323,28 +328,28 @@ camera_hardware_t* camera_hw_create(const char *device, int width, int height, i
     camera->frame_ready[0] = false;
     camera->frame_ready[1] = false;
 
-    // ============ 预分配I422转换缓冲区 ============
+    // ============ 预分配I422转换缓冲区（暂时保留，但可能未使用）============
     // I422格式
-    camera->y_plane_size = width * height;
-    camera->uv_plane_size = (width / 2) * (height / 2); 
+    // camera->y_plane_size = width * height;
+    // camera->uv_plane_size = (width / 2) * (height / 2); 
     
-    camera->y_plane = malloc(camera->y_plane_size);
-    camera->u_plane = malloc(camera->uv_plane_size);
-    camera->v_plane = malloc(camera->uv_plane_size);
+    // camera->y_plane = malloc(camera->y_plane_size);
+    // camera->u_plane = malloc(camera->uv_plane_size);
+    // camera->v_plane = malloc(camera->uv_plane_size);
     
-    if (!camera->y_plane || !camera->u_plane || !camera->v_plane) {
-        printf("[HW] 分配I422转换缓冲区失败\n");
-        // 清理已分配的资源
-        if (camera->y_plane) free(camera->y_plane);
-        if (camera->u_plane) free(camera->u_plane);
-        if (camera->v_plane) free(camera->v_plane);
-        if (camera->frame_buffers[0]) free(camera->frame_buffers[0]);
-        if (camera->frame_buffers[1]) free(camera->frame_buffers[1]);
-        free(camera);
-        return NULL;
-    }
+    // if (!camera->y_plane || !camera->u_plane || !camera->v_plane) {
+    //     printf("[HW] 分配I422转换缓冲区失败\n");
+    //     // 清理已分配的资源
+    //     if (camera->y_plane) free(camera->y_plane);
+    //     if (camera->u_plane) free(camera->u_plane);
+    //     if (camera->v_plane) free(camera->v_plane);
+    //     if (camera->frame_buffers[0]) free(camera->frame_buffers[0]);
+    //     if (camera->frame_buffers[1]) free(camera->frame_buffers[1]);
+    //     free(camera);
+    //     return NULL;
+    // }
     
-    printf("[HW] 摄像头硬件实例创建: %s, %dx%d, %dFPS\n", device, width, height, fps);
+    printf("[HW] 摄像头硬件实例创建: %s, %dx%d, %dFPS, 格式:%d\n", device, width, height, fps, format);
     
     return camera;
 }
@@ -432,18 +437,18 @@ void camera_hw_destroy(camera_hardware_t *camera)
     v4l2_cleanup(camera);
 
     // 释放I422转换缓冲区
-    if (camera->y_plane) {
-        free(camera->y_plane);
-        camera->y_plane = NULL;
-    }
-    if (camera->u_plane) {
-        free(camera->u_plane);
-        camera->u_plane = NULL;
-    }
-    if (camera->v_plane) {
-        free(camera->v_plane);
-        camera->v_plane = NULL;
-    }
+    // if (camera->y_plane) {
+    //     free(camera->y_plane);
+    //     camera->y_plane = NULL;
+    // }
+    // if (camera->u_plane) {
+    //     free(camera->u_plane);
+    //     camera->u_plane = NULL;
+    // }
+    // if (camera->v_plane) {
+    //     free(camera->v_plane);
+    //     camera->v_plane = NULL;
+    // }
     
     // 释放双缓冲区
     if (camera->frame_buffers[0]) {

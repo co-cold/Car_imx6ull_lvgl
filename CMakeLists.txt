@@ -45,10 +45,33 @@ set_target_properties(libyuv PROPERTIES
     IMPORTED_LOCATION ${LIBYUV_ROOT}/libyuv.a
 )
 
+################## 添加 FreeType 支持 ###################
+set(FREETYPE_ROOT "/home/coco/arm-freetype/_freetype_install" CACHE PATH "Path to FreeType")
+
+# 验证 FreeType 路径
+if(NOT EXISTS "${FREETYPE_ROOT}/include/freetype2/ft2build.h")
+    message(FATAL_ERROR "FreeType not found at ${FREETYPE_ROOT}")
+else()
+    message(STATUS "Using FreeType from: ${FREETYPE_ROOT}")
+endif()
+
+# 添加 FreeType 头文件路径
+include_directories(${FREETYPE_ROOT}/include)
+include_directories(${FREETYPE_ROOT}/include/freetype2)
+link_directories(${FREETYPE_ROOT}/lib)
+
 ###################递归处理 lvgl 内部的构建逻辑（编译 lvgl 源码、处理它的依赖等 ）###################################
 # 添加lvgl子目录，CMake会自动查找该目录下的CMakeLists.txt并执行，完成LVGL库的编译和配置
 add_subdirectory(lvgl) 
 add_subdirectory(lv_drivers)
+
+set(FFMPEG_LIB "/home/coco/arm-ffmpeg/_ffmpeg_install/lib")
+set(X264_LIB   "/home/coco/arm-ffmpeg/_x264_install/lib")
+set(ALSA_LIB   "/home/coco/arm-ffmpeg/alsa_install/lib")
+
+link_directories(${FFMPEG_LIB} ${X264_LIB} ${ALSA_LIB})
+
+add_subdirectory(multimedia)
 
 #########################################头文件处理#################################################
 # custom 和 generated 中的代码需要引用彼此的头文件以及 LVGL 的头文件（如 lv_conf.h、lvgl/lvgl.h 等）。通过include_directories 暴露这些头文件的路径，全局可用（对所有源文件类型，即在调用头文件的名称即可，无需查找相对位置，如#include "../../lvgl.h",添加后可以直接#include "lvgl.h",编译器会在你所添加的搜索路径下去找该头文件，就不会因为粗心导致编译错误找不到头文件了）
@@ -94,6 +117,7 @@ add_executable(lvgl_demo
 # 为my_gui_app可执行文件链接所需的库
 target_link_libraries(lvgl_demo
                         PRIVATE 
+                        freetype           # 链接FreeType库
                         lvgl               # 链接LVGL库
                         lvgl::demos
                         lv_drivers         # 链接lvgl驱动库
@@ -102,4 +126,5 @@ target_link_libraries(lvgl_demo
                         dl                 # 链接动态加载库（用于运行时加载动态库）
                         pthread            # 链接线程库（LVGL的多线程功能依赖）
                         libyuv
+                        multimedia
                      ) 

@@ -21,34 +21,12 @@ typedef struct
 	lv_obj_t *screen_home;
 	bool screen_home_del;
 	lv_obj_t *screen_home_cont_control_center;
-	lv_obj_t *screen_home_slider_2;
-	lv_obj_t *screen_home_slider_1;
-	lv_obj_t *screen_home_btn_13;
-	lv_obj_t *screen_home_btn_13_label;
-	lv_obj_t *screen_home_btn_12;
-	lv_obj_t *screen_home_btn_12_label;
-	lv_obj_t *screen_home_btn_11;
-	lv_obj_t *screen_home_btn_11_label;
-	lv_obj_t *screen_home_btn_10;
-	lv_obj_t *screen_home_btn_10_label;
-	lv_obj_t *screen_home_btn_9;
-	lv_obj_t *screen_home_btn_9_label;
-	lv_obj_t *screen_home_btn_8;
-	lv_obj_t *screen_home_btn_8_label;
-	lv_obj_t *screen_home_btn_7;
-	lv_obj_t *screen_home_btn_7_label;
-	lv_obj_t *screen_home_btn_6;
-	lv_obj_t *screen_home_btn_6_label;
-	lv_obj_t *screen_home_btn_5;
-	lv_obj_t *screen_home_btn_5_label;
-	lv_obj_t *screen_home_btn_4;
-	lv_obj_t *screen_home_btn_4_label;
-	lv_obj_t *screen_home_btn_3;
-	lv_obj_t *screen_home_btn_3_label;
-	lv_obj_t *screen_home_btn_2;
-	lv_obj_t *screen_home_btn_2_label;
-	lv_obj_t *screen_home_btn_1;
-	lv_obj_t *screen_home_btn_1_label;
+	lv_obj_t *screen_home_slider_volume;
+	lv_obj_t *screen_home_slider_light;
+	lv_obj_t *screen_home_label_volume;
+	lv_obj_t *screen_home_label_light;
+	lv_obj_t *screen_home_btn_settin;
+	lv_obj_t *screen_home_btn_settin_label;
 	lv_obj_t *screen_home_cont_touch;
 	lv_obj_t *screen_home_cont_home;
 	lv_obj_t *screen_home_img_background;
@@ -90,14 +68,35 @@ typedef struct
 	lv_obj_t *screen_cam_cont_cam;
 	lv_obj_t *screen_cam_btn_close;
 	lv_obj_t *screen_cam_btn_close_label;
-	lv_obj_t *screen_cam_btn_1;
-	lv_obj_t *screen_cam_btn_1_label;
 	lv_obj_t *screen_cam_img_video;
 	lv_obj_t *screen_weather;
 	bool screen_weather_del;
 	lv_obj_t *screen_weather_cont_weather;
 	lv_obj_t *screen_weather_ta_city;
-	lv_obj_t *screen_weather_label_1;
+	lv_obj_t *screen_weather_btn_find;
+	lv_obj_t *screen_weather_btn_find_label;
+	lv_obj_t *screen_weather_btn_back;
+	lv_obj_t *screen_weather_btn_back_label;
+	lv_obj_t *screen_weather_cont_part2;
+	lv_obj_t *screen_weather_cont_part1;
+	lv_obj_t *screen_weather_img_weather;
+	lv_obj_t *screen_weather_label_cityName;
+	lv_obj_t *screen_weather_label_temDateMin;
+	lv_obj_t *screen_weather_label_temDateMax;
+	lv_obj_t *screen_weather_label_temDate;
+	lv_obj_t *screen_weather_label_weather;
+	lv_obj_t *screen_weather_cont_day3;
+	lv_obj_t *screen_weather_img_3day;
+	lv_obj_t *screen_weather_label_3day;
+	lv_obj_t *screen_weather_label_3tem;
+	lv_obj_t *screen_weather_cont_day2;
+	lv_obj_t *screen_weather_img_2day;
+	lv_obj_t *screen_weather_label_2day;
+	lv_obj_t *screen_weather_label_2tem;
+	lv_obj_t *screen_weather_cont_day1;
+	lv_obj_t *screen_weather_img_1day;
+	lv_obj_t *screen_weather_label_1day;
+	lv_obj_t *screen_weather_label_1tem;
 	lv_obj_t *screen_music;
 	bool screen_music_del;
 	lv_obj_t *screen_music_cont_music;
@@ -117,7 +116,9 @@ typedef struct
 	lv_obj_t *screen_music_label_endTime;
 	lv_obj_t *screen_music_label_singer;
 	lv_obj_t *screen_music_label_song;
+	lv_obj_t *screen_music_label_fileName;
 	lv_obj_t *screen_music_cont_list;
+	lv_obj_t *screen_music_img_listBck;
 	lv_obj_t *screen_music_list_music;
 	lv_obj_t *screen_music_list_music_item0;
 	lv_obj_t *screen_music_list_music_item1;
@@ -128,6 +129,32 @@ typedef struct
 	bool screen_clock_del;
 	lv_obj_t *screen_clock_cont_clock;
 	lv_obj_t *screen_clock_label_1;
+	lv_obj_t *screen_video;
+	bool screen_video_del;
+	lv_obj_t *screen_video_cont_video;
+	lv_obj_t *screen_video_img_video;
+	lv_obj_t *screen_video_cont_videoCtrl;
+	lv_obj_t *screen_video_bar_time;
+	lv_obj_t *screen_video_btn_playing;
+	lv_obj_t *screen_video_btn_playing_label;
+	lv_obj_t *screen_video_btn_prev;
+	lv_obj_t *screen_video_btn_prev_label;
+	lv_obj_t *screen_video_btn_next;
+	lv_obj_t *screen_video_btn_next_label;
+	lv_obj_t *screen_video_btn_close;
+	lv_obj_t *screen_video_btn_close_label;
+	lv_obj_t *screen_video_btn_list;
+	lv_obj_t *screen_video_btn_list_label;
+	lv_obj_t *screen_video_label_fileName;
+	lv_obj_t *screen_video_label_progressTime;
+	lv_obj_t *screen_video_btn_back;
+	lv_obj_t *screen_video_btn_back_label;
+	lv_obj_t *screen_video_cont_list;
+	lv_obj_t *screen_video_list_video;
+	lv_obj_t *screen_video_list_video_item0;
+	lv_obj_t *screen_video_list_video_item1;
+	lv_obj_t *screen_video_btn_closeList;
+	lv_obj_t *screen_video_btn_closeList_label;
 	lv_obj_t *g_kb_top_layer;
 }lv_ui;
 
@@ -157,6 +184,7 @@ void setup_scr_screen_cam(lv_ui *ui);
 void setup_scr_screen_weather(lv_ui *ui);
 void setup_scr_screen_music(lv_ui *ui);
 void setup_scr_screen_clock(lv_ui *ui);
+void setup_scr_screen_video(lv_ui *ui);
 LV_IMG_DECLARE(_1694234191268_alpha_800x480);
 
 LV_IMG_DECLARE(_videoplayer_100x100);
@@ -184,16 +212,26 @@ LV_IMG_DECLARE(_voicedialer_100x100);
 LV_IMG_DECLARE(_camera_100x100);
 
 LV_IMG_DECLARE(_weatherBK_800x480);
-LV_IMG_DECLARE(_1725420839434_alpha_250x250);
+LV_IMG_DECLARE(_weather_0_alpha_150x150);
+LV_IMG_DECLARE(_weather_2_alpha_100x100);
+LV_IMG_DECLARE(_weather_12_alpha_100x100);
+LV_IMG_DECLARE(_weather_1_alpha_100x100);
 
-LV_FONT_DECLARE(lv_font_SourceHanSerifSC_Regular_15)
+LV_IMG_DECLARE(_music_bck_800x480);
+LV_IMG_DECLARE(_1725420839434_alpha_250x250);
+LV_IMG_DECLARE(_music_bck_alpha_800x300);
+
+LV_FONT_DECLARE(lv_font_SourceHanSerifSC_Regular_18)
 LV_FONT_DECLARE(lv_font_SourceHanSerifSC_Regular_40)
 LV_FONT_DECLARE(lv_font_SourceHanSerifSC_Regular_16)
 LV_FONT_DECLARE(lv_font_SourceHanSerifSC_Regular_20)
-LV_FONT_DECLARE(lv_font_montserratMedium_12)
+LV_FONT_DECLARE(lv_font_SourceHanSerifSC_Regular_14)
+LV_FONT_DECLARE(lv_font_SourceHanSerifSC_Regular_25)
+LV_FONT_DECLARE(lv_font_SourceHanSerifSC_Regular_30)
 LV_FONT_DECLARE(lv_font_montserratMedium_16)
+LV_FONT_DECLARE(lv_font_montserratMedium_18)
+LV_FONT_DECLARE(lv_font_montserratMedium_20)
 LV_FONT_DECLARE(lv_font_SourceHanSerifSC_Regular_12)
-LV_FONT_DECLARE(lv_font_SourceHanSerifSC_Regular_18)
 
 
 #ifdef __cplusplus

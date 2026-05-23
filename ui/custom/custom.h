@@ -22,6 +22,9 @@ bool get_ctrl_center_state();
 bool get_status_bar_state();
 void set_status_bar(uint8_t state);
 
+void slider_set_lable_light(lv_event_t *e);
+float slider_update_volume_label(lv_event_t *e);
+
 #ifdef __cplusplus
 }
 #endif

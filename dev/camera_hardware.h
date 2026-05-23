@@ -5,12 +5,20 @@
 #include <stdbool.h>
 #include <pthread.h>
 
+// 摄像头格式类型
+typedef enum {
+    CAMERA_FORMAT_AUTO = 0,  // 自动检测
+    CAMERA_FORMAT_YUYV,      // YUYV格式
+    CAMERA_FORMAT_RGB565     // RGB565格式
+} camera_format_type_t;
+
 // 摄像头硬件配置
 typedef struct {
-    const char *device;      // 设备路径
-    int width;               // 宽度
-    int height;              // 高度
-    int fps;                 // 帧率
+    const char *device;          // 设备路径
+    int width;                   // 宽度
+    int height;                  // 高度
+    int fps;                     // 帧率
+    camera_format_type_t format; // 期望格式
 } camera_hw_config_t;
 
 // 摄像头硬件状态
@@ -33,30 +41,30 @@ typedef struct {
     bool thread_running;       // 线程运行标志
     
     // 缓冲区
-    uint8_t *frame_buffers[2];
-    bool frame_ready[2]; // 每个缓冲区各自的就绪标志
+    uint8_t *frame_buffers[2]; // RGB565输出缓冲区
+    bool frame_ready[2];       // 每个缓冲区各自的就绪标志
     pthread_mutex_t buffer_mutex;  // 保护缓冲区交换
     
     int frame_count;
     float actual_fps;
 
-    // ============ 添加I422转换缓冲区 ============
-    uint8_t *y_plane;     // Y平面缓冲区
-    uint8_t *u_plane;     // U平面缓冲区
-    uint8_t *v_plane;     // V平面缓冲区
-    int y_plane_size;     // Y平面大小
-    int uv_plane_size;    // U/V平面大小
+    // 转换缓冲区（仅在需要时分配）
+    // uint8_t *y_plane;     // Y平面缓冲区
+    // uint8_t *u_plane;     // U平面缓冲区
+    // uint8_t *v_plane;     // V平面缓冲区
+    // int y_plane_size;     // Y平面大小
+    // int uv_plane_size;    // U/V平面大小
 
 } camera_hardware_t;
 
 // 硬件操作接口
-camera_hardware_t* camera_hw_create(const char *device, int width, int height, int fps);
+camera_hardware_t* camera_hw_create(const char *device, int width, int height, int fps, camera_format_type_t format);
 int camera_hw_init(camera_hardware_t *camera);
 int camera_hw_start(camera_hardware_t *camera);
 int camera_hw_stop(camera_hardware_t *camera);
 void camera_hw_destroy(camera_hardware_t *camera);
 
-// 帧获取接口
+// 帧获取接口 - 用于LVGL显示
 int camera_hw_get_latest_frame(camera_hardware_t *camera, uint8_t *output_buffer);
 
 // 控制接口（需要V4L2扩展支持）

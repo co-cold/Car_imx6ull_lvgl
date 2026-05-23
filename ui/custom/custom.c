@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include "lvgl.h"
 #include "custom.h"
+#include "custom_font.h"
 
 /*********************
  *      DEFINES
@@ -24,6 +25,7 @@
  **********************/
 static lv_obj_t *ctrl_center = NULL;
 static lv_obj_t *status_bar = NULL;
+static lv_timer_t *digital_clock_timer = NULL;
 /**********************
  *  STATIC PROTOTYPES
  **********************/
@@ -39,6 +41,8 @@ static lv_obj_t *status_bar = NULL;
 void custom_init(lv_ui *ui)
 {
     /* Add your codes here */
+    custom_font_init("/home/debian/font/SourceHanSerifSC-Regular.otf", 16);
+
     ctrl_center = ui->screen_home_cont_control_center;
     //移到系统顶层
     lv_obj_set_parent(ctrl_center, lv_layer_top());
@@ -106,4 +110,34 @@ void set_status_bar(uint8_t state)
     } else if(state == 0) {
         lv_obj_add_flag(status_bar, LV_OBJ_FLAG_HIDDEN);
     }
+}
+
+void slider_set_lable_light(lv_event_t *e)
+{
+    lv_obj_t *slider = lv_event_get_target(e);
+    if (!slider) return;
+    
+    int32_t value = lv_slider_get_value(slider);
+    
+    // 获取滑块的关联标签
+    lv_obj_t *label = lv_obj_get_user_data(slider);
+    if (label) {
+        lv_label_set_text_fmt(label, "%d%%", value);
+    }
+}
+
+float slider_update_volume_label(lv_event_t *e) {
+    lv_obj_t *slider = lv_event_get_target(e);
+    if (!slider) return 0.0f;
+    
+    // 获取滑块值并更新标签
+    int32_t value = lv_slider_get_value(slider);
+    lv_obj_t *label = lv_obj_get_user_data(slider);
+    if (label) {
+        lv_label_set_text_fmt(label, "%d%%", value);
+    }
+    
+    // 转换为音量值 (0.0 - 1.0)，滑块值直接对应百分比
+    float volume = value / 100.0f;
+    return volume;
 }

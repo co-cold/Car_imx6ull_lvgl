@@ -80,6 +80,7 @@ void init_scr_del_flag(lv_ui *ui)
     ui->screen_weather_del = true;
     ui->screen_music_del = true;
     ui->screen_clock_del = true;
+    ui->screen_video_del = true;
 }
 
 void setup_ui(lv_ui *ui)

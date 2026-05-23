@@ -79,7 +79,7 @@ camera_ui_t* camera_ui_init(lv_obj_t *display_img, const char *device, int width
     memset(camera_ui->display_buffer, 0, camera_ui->buffer_size);
     
     // 创建硬件实例
-    camera_ui->hw_camera = camera_hw_create(device, width, height, fps);
+    camera_ui->hw_camera = camera_hw_create(device, width, height, fps, CAMERA_FORMAT_RGB565);
     if (!camera_ui->hw_camera) {
         printf("错误: 创建摄像头硬件失败\n");
         free(camera_ui->display_buffer);

@@ -11,3 +11,8 @@ cmake_install.cmake
 
 *.o
 *.swp
+
+# Stress test files
+auto_stress_test*
+lvgl_stress_test*
+*.txt

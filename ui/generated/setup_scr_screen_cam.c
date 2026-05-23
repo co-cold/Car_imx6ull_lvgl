@@ -67,29 +67,6 @@ void setup_scr_screen_cam(lv_ui *ui)
     lv_obj_set_style_text_opa(ui->screen_cam_btn_close, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_align(ui->screen_cam_btn_close, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
 
-    //Write codes screen_cam_btn_1
-    ui->screen_cam_btn_1 = lv_btn_create(ui->screen_cam_cont_cam);
-    ui->screen_cam_btn_1_label = lv_label_create(ui->screen_cam_btn_1);
-    lv_label_set_text(ui->screen_cam_btn_1_label, "拍照");
-    lv_label_set_long_mode(ui->screen_cam_btn_1_label, LV_LABEL_LONG_WRAP);
-    lv_obj_align(ui->screen_cam_btn_1_label, LV_ALIGN_CENTER, 0, 0);
-    lv_obj_set_style_pad_all(ui->screen_cam_btn_1, 0, LV_STATE_DEFAULT);
-    lv_obj_set_width(ui->screen_cam_btn_1_label, LV_PCT(100));
-    lv_obj_set_pos(ui->screen_cam_btn_1, 690, 400);
-    lv_obj_set_size(ui->screen_cam_btn_1, 100, 50);
-
-    //Write style for screen_cam_btn_1, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
-    lv_obj_set_style_bg_opa(ui->screen_cam_btn_1, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui->screen_cam_btn_1, lv_color_hex(0x2195f6), LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_grad_dir(ui->screen_cam_btn_1, LV_GRAD_DIR_NONE, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_border_width(ui->screen_cam_btn_1, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_radius(ui->screen_cam_btn_1, 5, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_shadow_width(ui->screen_cam_btn_1, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_color(ui->screen_cam_btn_1, lv_color_hex(0xffffff), LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui->screen_cam_btn_1, &lv_font_SourceHanSerifSC_Regular_16, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui->screen_cam_btn_1, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_align(ui->screen_cam_btn_1, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
-
     //Write codes screen_cam_img_video
     ui->screen_cam_img_video = lv_img_create(ui->screen_cam_cont_cam);
     lv_obj_add_flag(ui->screen_cam_img_video, LV_OBJ_FLAG_CLICKABLE);
