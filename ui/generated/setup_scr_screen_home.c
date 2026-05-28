@@ -53,12 +53,12 @@ void setup_scr_screen_home(lv_ui *ui)
     lv_slider_set_range(ui->screen_home_slider_volume, 0, 100);
     lv_slider_set_mode(ui->screen_home_slider_volume, LV_SLIDER_MODE_NORMAL);
     lv_slider_set_value(ui->screen_home_slider_volume, 50, LV_ANIM_OFF);
-    lv_obj_set_pos(ui->screen_home_slider_volume, 670, 150);
+    lv_obj_set_pos(ui->screen_home_slider_volume, 671, 150);
     lv_obj_set_size(ui->screen_home_slider_volume, 60, 230);
 
     //Write style for screen_home_slider_volume, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
     lv_obj_set_style_bg_opa(ui->screen_home_slider_volume, 66, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui->screen_home_slider_volume, lv_color_hex(0x2195f6), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui->screen_home_slider_volume, lv_color_hex(0xa5a5a5), LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_grad_dir(ui->screen_home_slider_volume, LV_GRAD_DIR_NONE, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(ui->screen_home_slider_volume, 10, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_outline_width(ui->screen_home_slider_volume, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
@@ -66,7 +66,7 @@ void setup_scr_screen_home(lv_ui *ui)
 
     //Write style for screen_home_slider_volume, Part: LV_PART_INDICATOR, State: LV_STATE_DEFAULT.
     lv_obj_set_style_bg_opa(ui->screen_home_slider_volume, 255, LV_PART_INDICATOR|LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui->screen_home_slider_volume, lv_color_hex(0x2195f6), LV_PART_INDICATOR|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui->screen_home_slider_volume, lv_color_hex(0xffffff), LV_PART_INDICATOR|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_grad_dir(ui->screen_home_slider_volume, LV_GRAD_DIR_NONE, LV_PART_INDICATOR|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(ui->screen_home_slider_volume, 8, LV_PART_INDICATOR|LV_STATE_DEFAULT);
 
@@ -90,7 +90,7 @@ void setup_scr_screen_home(lv_ui *ui)
 
     //Write style for screen_home_slider_light, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
     lv_obj_set_style_bg_opa(ui->screen_home_slider_light, 66, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui->screen_home_slider_light, lv_color_hex(0x2195f6), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui->screen_home_slider_light, lv_color_hex(0xa5a5a5), LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_grad_dir(ui->screen_home_slider_light, LV_GRAD_DIR_NONE, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(ui->screen_home_slider_light, 10, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_outline_width(ui->screen_home_slider_light, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
@@ -98,7 +98,7 @@ void setup_scr_screen_home(lv_ui *ui)
 
     //Write style for screen_home_slider_light, Part: LV_PART_INDICATOR, State: LV_STATE_DEFAULT.
     lv_obj_set_style_bg_opa(ui->screen_home_slider_light, 255, LV_PART_INDICATOR|LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui->screen_home_slider_light, lv_color_hex(0x2195f6), LV_PART_INDICATOR|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui->screen_home_slider_light, lv_color_hex(0xffffff), LV_PART_INDICATOR|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_grad_dir(ui->screen_home_slider_light, LV_GRAD_DIR_NONE, LV_PART_INDICATOR|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(ui->screen_home_slider_light, 8, LV_PART_INDICATOR|LV_STATE_DEFAULT);
 
@@ -171,7 +171,7 @@ void setup_scr_screen_home(lv_ui *ui)
 
     //Write style for screen_home_btn_settin, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
     lv_obj_set_style_bg_opa(ui->screen_home_btn_settin, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui->screen_home_btn_settin, lv_color_hex(0x2195f6), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui->screen_home_btn_settin, lv_color_hex(0xa5a5a5), LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_grad_dir(ui->screen_home_btn_settin, LV_GRAD_DIR_NONE, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_border_width(ui->screen_home_btn_settin, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(ui->screen_home_btn_settin, 5, LV_PART_MAIN|LV_STATE_DEFAULT);
@@ -592,7 +592,7 @@ void setup_scr_screen_home(lv_ui *ui)
     //Write style for screen_home_label_status_bt, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
     lv_obj_set_style_border_width(ui->screen_home_label_status_bt, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(ui->screen_home_label_status_bt, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_color(ui->screen_home_label_status_bt, lv_color_hex(0x000000), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui->screen_home_label_status_bt, lv_color_hex(0xffffff), LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui->screen_home_label_status_bt, &lv_font_SourceHanSerifSC_Regular_20, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui->screen_home_label_status_bt, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_letter_space(ui->screen_home_label_status_bt, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
@@ -615,7 +615,7 @@ void setup_scr_screen_home(lv_ui *ui)
     //Write style for screen_home_label_status_eq, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
     lv_obj_set_style_border_width(ui->screen_home_label_status_eq, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(ui->screen_home_label_status_eq, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_color(ui->screen_home_label_status_eq, lv_color_hex(0x000000), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui->screen_home_label_status_eq, lv_color_hex(0xffffff), LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui->screen_home_label_status_eq, &lv_font_SourceHanSerifSC_Regular_20, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui->screen_home_label_status_eq, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_letter_space(ui->screen_home_label_status_eq, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
@@ -632,13 +632,13 @@ void setup_scr_screen_home(lv_ui *ui)
     ui->screen_home_label_status_wifi = lv_label_create(ui->screen_home_cont_status_bar);
     lv_label_set_text_static(ui->screen_home_label_status_wifi, "" LV_SYMBOL_WIFI " ");
     lv_label_set_long_mode(ui->screen_home_label_status_wifi, LV_LABEL_LONG_WRAP);
-    lv_obj_set_pos(ui->screen_home_label_status_wifi, 718, 8);
+    lv_obj_set_pos(ui->screen_home_label_status_wifi, 718, 7);
     lv_obj_set_size(ui->screen_home_label_status_wifi, 30, 30);
 
     //Write style for screen_home_label_status_wifi, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
     lv_obj_set_style_border_width(ui->screen_home_label_status_wifi, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(ui->screen_home_label_status_wifi, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_color(ui->screen_home_label_status_wifi, lv_color_hex(0x000000), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui->screen_home_label_status_wifi, lv_color_hex(0xffffff), LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui->screen_home_label_status_wifi, &lv_font_SourceHanSerifSC_Regular_20, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui->screen_home_label_status_wifi, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_letter_space(ui->screen_home_label_status_wifi, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
@@ -661,7 +661,7 @@ void setup_scr_screen_home(lv_ui *ui)
                 timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
 
     // 使用当前时间作为初始值
-    ui->screen_home_digital_clock_status = lv_dclock_create(ui->screen_home_cont_home, time_str);
+    ui->screen_home_digital_clock_status = lv_dclock_create(ui->screen_home_cont_status_bar, time_str);
 
     // 同时更新全局变量
     screen_home_digital_clock_status_hour_value = timeinfo->tm_hour;
@@ -672,8 +672,6 @@ void setup_scr_screen_home(lv_ui *ui)
         lv_timer_create(screen_home_digital_clock_status_timer, 1000, NULL);
         screen_home_digital_clock_status_timer_enabled = true;
     }
-    lv_obj_set_pos(ui->screen_home_digital_clock_status, 0, 0);
-    lv_obj_set_size(ui->screen_home_digital_clock_status, 100, 40);
 
     //Write style for screen_home_digital_clock_status, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
     lv_obj_set_style_radius(ui->screen_home_digital_clock_status, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
@@ -700,13 +698,7 @@ void setup_scr_screen_home(lv_ui *ui)
     lv_obj_set_user_data(ui->screen_home_slider_light, ui->screen_home_label_light);
     lv_obj_set_user_data(ui->screen_home_slider_volume, ui->screen_home_label_volume);
 
-    if(get_ctrl_center_state()) {
-        lv_obj_del(ui->screen_home_cont_control_center);
-    }
-    if(get_status_bar_state()) {
-        lv_obj_del(ui->screen_home_cont_status_bar);
-    }
-
+    custom_top_init(ui);
 
     //Update current screen layout.
     lv_obj_update_layout(ui->screen_home);

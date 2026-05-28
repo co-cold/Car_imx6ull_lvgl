@@ -1474,6 +1474,23 @@ void custom_media_init_music_list(lv_ui *ui) {
     
     int count = playlist_get_count(ctx->audio_playlist);
     LOGD("custom_media_init_music_list: 找到 %d 首歌曲\n", count);
+
+    // 应用原有样式
+    static lv_style_t style_list_btn;
+    ui_init_style(&style_list_btn);
+    lv_style_set_pad_top(&style_list_btn, 5);
+    lv_style_set_pad_left(&style_list_btn, 10);
+    lv_style_set_pad_right(&style_list_btn, 0);
+    lv_style_set_pad_bottom(&style_list_btn, 10);
+    lv_style_set_border_width(&style_list_btn, 1);
+    lv_style_set_border_opa(&style_list_btn, 255);
+    lv_style_set_border_color(&style_list_btn, lv_color_hex(0x6f6969));
+    lv_style_set_border_side(&style_list_btn, LV_BORDER_SIDE_FULL);
+    lv_style_set_text_color(&style_list_btn, lv_color_hex(0xfef6ea));
+    lv_style_set_text_font(&style_list_btn, custom_font_get());
+    lv_style_set_text_opa(&style_list_btn, 255);
+    lv_style_set_radius(&style_list_btn, 0);
+    lv_style_set_bg_opa(&style_list_btn, 0);
     
     for (int i = 0; i < count; i++) {
         PlaylistItem *item = playlist_get_item(ctx->audio_playlist, i);
@@ -1491,28 +1508,13 @@ void custom_media_init_music_list(lv_ui *ui) {
         
         // 添加列表项
         lv_obj_t *btn = lv_list_add_btn(ui->screen_music_list_music, LV_SYMBOL_AUDIO, display_name);
+        lv_obj_t* img = lv_obj_get_child(btn, 0);
+        lv_obj_set_style_text_font(img, &lv_font_montserratMedium_16, LV_PART_MAIN); // 使用内置符号字体
+        lv_img_set_src(img, LV_SYMBOL_AUDIO);
+
         lv_obj_set_user_data(btn, (void*)(intptr_t)i);
-        
-        // 应用原有样式
-        static lv_style_t style_list_btn;
-        if (i == 0) {
-            ui_init_style(&style_list_btn);
-            lv_style_set_pad_top(&style_list_btn, 5);
-            lv_style_set_pad_left(&style_list_btn, 10);
-            lv_style_set_pad_right(&style_list_btn, 0);
-            lv_style_set_pad_bottom(&style_list_btn, 10);
-            lv_style_set_border_width(&style_list_btn, 1);
-            lv_style_set_border_opa(&style_list_btn, 255);
-            lv_style_set_border_color(&style_list_btn, lv_color_hex(0x6f6969));
-            lv_style_set_border_side(&style_list_btn, LV_BORDER_SIDE_FULL);
-            lv_style_set_text_color(&style_list_btn, lv_color_hex(0xfef6ea));
-            lv_style_set_text_font(&style_list_btn, custom_font_get());
-            lv_style_set_text_opa(&style_list_btn, 255);
-            lv_style_set_radius(&style_list_btn, 0);
-            lv_style_set_bg_opa(&style_list_btn, 0);
-        }
+
         lv_obj_add_style(btn, &style_list_btn, LV_PART_MAIN|LV_STATE_DEFAULT);
-        
         // 添加点击事件
         lv_obj_add_event_cb(btn, music_list_item_click_event, LV_EVENT_CLICKED, NULL);
     }
@@ -1572,7 +1574,7 @@ void custom_media_init_video_list(lv_ui *ui) {
     lv_style_set_text_opa(&style_list_btn, 255);
     lv_style_set_radius(&style_list_btn, 0);
     lv_style_set_bg_opa(&style_list_btn, 0);
-    
+
     for (int i = 0; i < count; i++) {
         PlaylistItem *item = playlist_get_item(ctx->video_playlist, i);
         if (!item || !item->file_path) continue;
@@ -1586,6 +1588,10 @@ void custom_media_init_video_list(lv_ui *ui) {
         
         // 添加列表项，使用LV_SYMBOL_VIDEO图标
         lv_obj_t *btn = lv_list_add_btn(ui->screen_video_list_video, LV_SYMBOL_VIDEO, display_name);
+        lv_obj_t* img = lv_obj_get_child(btn, 0);
+        lv_obj_set_style_text_font(img, &lv_font_montserratMedium_16, LV_PART_MAIN); // 使用内置符号字体
+        lv_img_set_src(img, LV_SYMBOL_VIDEO);
+
         lv_obj_set_user_data(btn, (void*)(intptr_t)i);
         
         // 应用样式（与音乐列表保持一致）

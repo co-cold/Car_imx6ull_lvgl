@@ -65,6 +65,12 @@ static void screen_home_event_handler (lv_event_t *e)
             show_control_center();
             break;
         }
+        case LV_DIR_RIGHT:
+        {
+            lv_indev_wait_release(lv_indev_get_act());
+            ui_load_scr_animation(&guider_ui, &guider_ui.screen_carDashboard, guider_ui.screen_carDashboard_del, &guider_ui.screen_home_del, setup_scr_screen_carDashboard, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 200, 200, false, true);
+            break;
+        }
         default:
             break;
         }
@@ -791,6 +797,47 @@ void events_init_screen_video (lv_ui *ui)
     lv_obj_add_event_cb(ui->screen_video_btn_prev, screen_video_btn_prev_event_handler, LV_EVENT_ALL, ui);
     lv_obj_add_event_cb(ui->screen_video_btn_next, screen_video_btn_next_event_handler, LV_EVENT_ALL, ui);
     lv_obj_add_event_cb(ui->screen_video_btn_close, screen_video_btn_close_event_handler, LV_EVENT_ALL, ui);
+}
+
+static void screen_carDashboard_event_handler (lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    switch (code) {
+    case LV_EVENT_SCREEN_LOADED:
+    {
+        start_dashboard_animation(&guider_ui);
+        set_status_bar(0);
+        //event_carDashboard
+        break;
+    }
+    case LV_EVENT_SCREEN_UNLOAD_START:
+    {
+        stop_dashboard_animation();
+        break;
+    }
+    case LV_EVENT_GESTURE:
+    {
+        lv_dir_t dir = lv_indev_get_gesture_dir(lv_indev_get_act());
+        switch(dir) {
+        case LV_DIR_TOP:
+        {
+            lv_indev_wait_release(lv_indev_get_act());
+            ui_load_scr_animation(&guider_ui, &guider_ui.screen_home, guider_ui.screen_home_del, &guider_ui.screen_carDashboard_del, setup_scr_screen_home, LV_SCR_LOAD_ANIM_MOVE_LEFT, 200, 200, false, true);
+            break;
+        }
+        default:
+            break;
+        }
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+void events_init_screen_carDashboard (lv_ui *ui)
+{
+    lv_obj_add_event_cb(ui->screen_carDashboard, screen_carDashboard_event_handler, LV_EVENT_ALL, ui);
 }
 
 void events_init(lv_ui *ui)

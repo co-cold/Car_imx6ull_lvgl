@@ -81,7 +81,7 @@ void clock_count(int *hour, int *min, int *sec)
 extern int screen_home_digital_clock_status_hour_value;
 extern int screen_home_digital_clock_status_min_value;
 extern int screen_home_digital_clock_status_sec_value;
-
+/* 全局时钟定时器 */
 void screen_home_digital_clock_status_timer(lv_timer_t *timer)
 {
     time_t now = time(NULL);
@@ -101,6 +101,26 @@ void screen_home_digital_clock_status_timer(lv_timer_t *timer)
                               timeinfo->tm_min, 
                               timeinfo->tm_sec);
     }
+
+    if (lv_obj_is_valid(guider_ui.screen_clock_digital_clock_1))
+    {
+        // 24小时制
+        lv_dclock_set_text_fmt(guider_ui.screen_clock_digital_clock_1, 
+                              "%02d:%02d:%02d", 
+                              timeinfo->tm_hour, 
+                              timeinfo->tm_min, 
+                              timeinfo->tm_sec);
+    }
+
+    if (lv_obj_is_valid(guider_ui.screen_clock_analog_clock_1))
+    {
+        // 24小时制
+        lv_analogclock_set_time(guider_ui.screen_clock_analog_clock_1, 
+            screen_home_digital_clock_status_hour_value, 
+            screen_home_digital_clock_status_min_value,
+            screen_home_digital_clock_status_sec_value);
+
+    }
 }
 
 // //Write codes screen_home_digital_clock_status
@@ -113,7 +133,7 @@ void screen_home_digital_clock_status_timer(lv_timer_t *timer)
 //             timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
 
 // // 使用当前时间作为初始值
-// ui->screen_home_digital_clock_status = lv_dclock_create(ui->screen_home_cont_home, time_str);
+// ui->screen_home_digital_clock_status = lv_dclock_create(ui->screen_home_cont_status_bar, time_str);
 
 // // 同时更新全局变量
 // screen_home_digital_clock_status_hour_value = timeinfo->tm_hour;
@@ -123,4 +143,35 @@ void screen_home_digital_clock_status_timer(lv_timer_t *timer)
 // if (!screen_home_digital_clock_status_timer_enabled) {
 //     lv_timer_create(screen_home_digital_clock_status_timer, 1000, NULL);
 //     screen_home_digital_clock_status_timer_enabled = true;
+// }
+
+// lv_analogclock_set_time(ui->screen_clock_analog_clock_1, 
+// screen_home_digital_clock_status_hour_value, 
+// screen_home_digital_clock_status_min_value,
+// screen_home_digital_clock_status_sec_value);
+// // create timer
+// if (!screen_clock_analog_clock_1_timer_enabled) {
+//     // lv_timer_create(screen_clock_analog_clock_1_timer, 1000, NULL);
+//     screen_clock_analog_clock_1_timer_enabled = true;
+// }
+// lv_obj_set_style_radius(ui->screen_clock_analog_clock_1, LV_RADIUS_CIRCLE, LV_PART_MAIN|LV_STATE_DEFAULT);
+// static lv_style_t screen_clock_analog_clock_1_style;
+// lv_style_init(&screen_clock_analog_clock_1_style);           //初始化样式
+// lv_style_set_pad_top(&screen_clock_analog_clock_1_style, 5);
+// lv_style_set_pad_left(&screen_clock_analog_clock_1_style, 5);
+// lv_style_set_pad_right(&screen_clock_analog_clock_1_style, 5);
+// lv_style_set_pad_bottom(&screen_clock_analog_clock_1_style, 5);
+// lv_obj_add_style(ui->screen_clock_analog_clock_1, &screen_clock_analog_clock_1_style, LV_PART_MAIN);
+
+// //Write codes screen_clock_digital_clock_1
+// static bool screen_clock_digital_clock_1_timer_enabled = false;
+// char time_str[20];
+// snprintf(time_str, sizeof(time_str), "%02d:%02d:%02d", 
+//             screen_home_digital_clock_status_hour_value, 
+//             screen_home_digital_clock_status_min_value, 
+//             screen_home_digital_clock_status_sec_value);
+// ui->screen_clock_digital_clock_1 = lv_dclock_create(ui->screen_clock_cont_clock, time_str);
+// if (!screen_clock_digital_clock_1_timer_enabled) {
+//     // lv_timer_create(screen_clock_digital_clock_1_timer, 1000, NULL);
+//     screen_clock_digital_clock_1_timer_enabled = true;
 // }

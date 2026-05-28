@@ -12,6 +12,9 @@ set(CMAKE_C_COMPILER /opt/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf/bi
 # 指定C++交叉编译器路径，使用arm-linux-gnueabihf-g++为IMX6ULL开发板编译C++代码，如果没有使用C++，此行以及下面的CXX规则可以去掉
 set(CMAKE_CXX_COMPILER /opt/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf-g++)
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
+
 # 此处用于定义项目的基本信息，我仅定义项目名称为GUI_LVGL_IMX6ULL，标识当前是针对IMX6ULL的LVGL GUI项目
 project(LVGL_DEMO)
 
@@ -84,7 +87,9 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/ui/generated/guider_fonts # 自动生成的字体相关头文件
     ${PROJECT_SOURCE_DIR}/lvgl     # LVGL库的头文件目录
     ${PROJECT_SOURCE_DIR}/lv_drivers     # LVGL驱动文件目录
-    ${PROJECT_SOURCE_DIR}/ui/dclock  # 添加gui guider dclock组件目录
+    ${PROJECT_SOURCE_DIR}/ui/Edclock  # 添加gui guider dclock组件目录
+    ${PROJECT_SOURCE_DIR}/ui/Eanalogclock  # 添加gui guider analogclock组件目录
+    ${PROJECT_SOURCE_DIR}/ui/Ekeyboard  # 添加gui guider keyboard组件目录
     ${PROJECT_SOURCE_DIR}/dev  # 添加设备代码
 )
 
@@ -94,7 +99,9 @@ include_directories(
 file(GLOB_RECURSE CUSTOM_SOURCES "${PROJECT_SOURCE_DIR}/ui/custom/*.c")
 # 递归查找generated目录下所有.c文件，并存入GENERATED_SOURCES变量
 file(GLOB_RECURSE GENERATED_SOURCES "${PROJECT_SOURCE_DIR}/ui/generated/*.c")
-file(GLOB_RECURSE DCLOCK_SOURCES "${PROJECT_SOURCE_DIR}/ui/dclock/*.c")
+file(GLOB_RECURSE DCLOCK_SOURCES "${PROJECT_SOURCE_DIR}/ui/Edclock/*.c")
+file(GLOB_RECURSE ANALOGDCLOCK_SOURCES "${PROJECT_SOURCE_DIR}/ui/Eanalogclock/*.c")
+file(GLOB_RECURSE KEYBOARD_SOURCES "${PROJECT_SOURCE_DIR}/ui/Ekeyboard/*.c")
 # 设备
 file(GLOB_RECURSE DEV_SOURCES "${PROJECT_SOURCE_DIR}/dev/*.c")
 
@@ -111,6 +118,8 @@ add_executable(lvgl_demo
     ${GENERATED_SOURCES}# 包含generated目录下的所有自动生成UI代码
     ${DIRVER_SOURCES}# 包含LVGL的显示和输入驱动代码
     ${DCLOCK_SOURCES}# gui guider dclock组件
+    ${ANALOGDCLOCK_SOURCES}# gui guider analogclock组件
+    ${KEYBOARD_SOURCES}# gui guider keyboard组件
     ${DEV_SOURCES} # 外设
 )
 

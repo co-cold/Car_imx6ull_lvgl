@@ -69,8 +69,28 @@ typedef struct
 	lv_obj_t *screen_cam_btn_close;
 	lv_obj_t *screen_cam_btn_close_label;
 	lv_obj_t *screen_cam_img_video;
+	lv_obj_t *screen_cam_ddlist_device;
 	lv_obj_t *screen_weather;
 	bool screen_weather_del;
+	lv_obj_t *screen_weather_cont_Allweather;
+	lv_obj_t *screen_weather_img_9;
+	lv_obj_t *screen_weather_img_4;
+	lv_obj_t *screen_weather_img_5;
+	lv_obj_t *screen_weather_img_6;
+	lv_obj_t *screen_weather_img_7;
+	lv_obj_t *screen_weather_img_8;
+	lv_obj_t *screen_weather_img_10;
+	lv_obj_t *screen_weather_img_15;
+	lv_obj_t *screen_weather_img_11;
+	lv_obj_t *screen_weather_img_12;
+	lv_obj_t *screen_weather_img_13;
+	lv_obj_t *screen_weather_img_14;
+	lv_obj_t *screen_weather_img_21;
+	lv_obj_t *screen_weather_img_16;
+	lv_obj_t *screen_weather_img_17;
+	lv_obj_t *screen_weather_img_20;
+	lv_obj_t *screen_weather_img_19;
+	lv_obj_t *screen_weather_img_18;
 	lv_obj_t *screen_weather_cont_weather;
 	lv_obj_t *screen_weather_ta_city;
 	lv_obj_t *screen_weather_btn_find;
@@ -89,14 +109,17 @@ typedef struct
 	lv_obj_t *screen_weather_img_3day;
 	lv_obj_t *screen_weather_label_3day;
 	lv_obj_t *screen_weather_label_3tem;
+	lv_obj_t *screen_weather_label_3weather;
 	lv_obj_t *screen_weather_cont_day2;
 	lv_obj_t *screen_weather_img_2day;
 	lv_obj_t *screen_weather_label_2day;
 	lv_obj_t *screen_weather_label_2tem;
+	lv_obj_t *screen_weather_label_2weather;
 	lv_obj_t *screen_weather_cont_day1;
 	lv_obj_t *screen_weather_img_1day;
 	lv_obj_t *screen_weather_label_1day;
 	lv_obj_t *screen_weather_label_1tem;
+	lv_obj_t *screen_weather_label_1weather;
 	lv_obj_t *screen_music;
 	bool screen_music_del;
 	lv_obj_t *screen_music_cont_music;
@@ -118,7 +141,6 @@ typedef struct
 	lv_obj_t *screen_music_label_song;
 	lv_obj_t *screen_music_label_fileName;
 	lv_obj_t *screen_music_cont_list;
-	lv_obj_t *screen_music_img_listBck;
 	lv_obj_t *screen_music_list_music;
 	lv_obj_t *screen_music_list_music_item0;
 	lv_obj_t *screen_music_list_music_item1;
@@ -128,7 +150,8 @@ typedef struct
 	lv_obj_t *screen_clock;
 	bool screen_clock_del;
 	lv_obj_t *screen_clock_cont_clock;
-	lv_obj_t *screen_clock_label_1;
+	lv_obj_t *screen_clock_analog_clock_1;
+	lv_obj_t *screen_clock_digital_clock_1;
 	lv_obj_t *screen_video;
 	bool screen_video_del;
 	lv_obj_t *screen_video_cont_video;
@@ -155,6 +178,60 @@ typedef struct
 	lv_obj_t *screen_video_list_video_item1;
 	lv_obj_t *screen_video_btn_closeList;
 	lv_obj_t *screen_video_btn_closeList_label;
+	lv_obj_t *screen_carDashboard;
+	bool screen_carDashboard_del;
+	lv_obj_t *screen_carDashboard_img_carBack;
+	lv_obj_t *screen_carDashboard_img_base;
+	lv_obj_t *screen_carDashboard_cont_rSpeed;
+	lv_obj_t *screen_carDashboard_img_rSpeed;
+	lv_obj_t *screen_carDashboard_img_needle;
+	lv_obj_t *screen_carDashboard_img_carLog;
+	lv_obj_t *screen_carDashboard_label_speedNum1;
+	lv_obj_t *screen_carDashboard_label_speedNum2;
+	lv_obj_t *screen_carDashboard_label_speedRpm;
+	lv_obj_t *screen_carDashboard_meter_rSpeed;
+	lv_meter_scale_t *screen_carDashboard_meter_rSpeed_scale_0;
+	lv_meter_indicator_t *screen_carDashboard_meter_rSpeed_scale_0_ndline_0;
+	lv_meter_indicator_t *screen_carDashboard_meter_rSpeed_scale_0_arc_0;
+	lv_obj_t *screen_carDashboard_cont_cSpeed;
+	lv_obj_t *screen_carDashboard_img_cSpeed;
+	lv_obj_t *screen_carDashboard_img_carLog1;
+	lv_obj_t *screen_carDashboard_label_speedNum4;
+	lv_obj_t *screen_carDashboard_label_speedNum3;
+	lv_obj_t *screen_carDashboard_label_speedSpd;
+	lv_obj_t *screen_carDashboard_meter_cSpeed;
+	lv_meter_scale_t *screen_carDashboard_meter_cSpeed_scale_0;
+	lv_meter_indicator_t *screen_carDashboard_meter_cSpeed_scale_0_ndline_0;
+	lv_meter_indicator_t *screen_carDashboard_meter_cSpeed_scale_0_arc_0;
+	lv_obj_t *screen_carDashboard_img_line1;
+	lv_obj_t *screen_carDashboard_img_line2;
+	lv_obj_t *screen_carDashboard_img_line3;
+	lv_obj_t *screen_carDashboard_img_line4;
+	lv_obj_t *screen_carDashboard_img_cen1;
+	lv_obj_t *screen_carDashboard_label_largeNum;
+	lv_obj_t *screen_carDashboard_label_largeU;
+	lv_obj_t *screen_carDashboard_img_arc1;
+	lv_obj_t *screen_carDashboard_img_arc2;
+	lv_obj_t *screen_carDashboard_cont_bt;
+	lv_obj_t *screen_carDashboard_cont_tpR;
+	lv_obj_t *screen_carDashboard_img_AbsOff;
+	lv_obj_t *screen_carDashboard_img_Door;
+	lv_obj_t *screen_carDashboard_img_Seatbelt;
+	lv_obj_t *screen_carDashboard_img_AbsOn;
+	lv_obj_t *screen_carDashboard_cont_btL;
+	lv_obj_t *screen_carDashboard_img_ACC;
+	lv_obj_t *screen_carDashboard_img_HighBeam;
+	lv_obj_t *screen_carDashboard_cont_btR;
+	lv_obj_t *screen_carDashboard_img_RearFog;
+	lv_obj_t *screen_carDashboard_img_FrontFog;
+	lv_obj_t *screen_carDashboard_cont_tpL;
+	lv_obj_t *screen_carDashboard_img_turnL;
+	lv_obj_t *screen_carDashboard_img_turnR;
+	lv_obj_t *screen_carDashboard_img_car1;
+	lv_obj_t *screen_map;
+	bool screen_map_del;
+	lv_obj_t *screen_map_imgbtn_map;
+	lv_obj_t *screen_map_imgbtn_map_label;
 	lv_obj_t *g_kb_top_layer;
 }lv_ui;
 
@@ -185,6 +262,8 @@ void setup_scr_screen_weather(lv_ui *ui);
 void setup_scr_screen_music(lv_ui *ui);
 void setup_scr_screen_clock(lv_ui *ui);
 void setup_scr_screen_video(lv_ui *ui);
+void setup_scr_screen_carDashboard(lv_ui *ui);
+void setup_scr_screen_map(lv_ui *ui);
 LV_IMG_DECLARE(_1694234191268_alpha_800x480);
 
 LV_IMG_DECLARE(_videoplayer_100x100);
@@ -211,15 +290,66 @@ LV_IMG_DECLARE(_voicedialer_100x100);
 
 LV_IMG_DECLARE(_camera_100x100);
 
+LV_IMG_DECLARE(_musicBack2l1_800x480);
+LV_IMG_DECLARE(_weather_3_alpha_100x100);
+LV_IMG_DECLARE(_weather_18_alpha_100x100);
+LV_IMG_DECLARE(_weather_2_alpha_100x100);
+LV_IMG_DECLARE(_weather_22_alpha_100x100);
+LV_IMG_DECLARE(_weather_13_alpha_100x100);
+LV_IMG_DECLARE(_weather_24_alpha_100x100);
+LV_IMG_DECLARE(_weather_4_alpha_100x100);
+LV_IMG_DECLARE(_weather_18_alpha_150x150);
+LV_IMG_DECLARE(_weather_7_alpha_100x100);
+LV_IMG_DECLARE(_weather_1_alpha_150x150);
+LV_IMG_DECLARE(_weather_13_alpha_150x150);
+LV_IMG_DECLARE(_weather_12_alpha_150x150);
+LV_IMG_DECLARE(_weather_7_alpha_150x150);
+LV_IMG_DECLARE(_weather_2_alpha_150x150);
+LV_IMG_DECLARE(_weather_22_alpha_150x150);
+LV_IMG_DECLARE(_weather_4_alpha_150x150);
+LV_IMG_DECLARE(_weather_3_alpha_150x150);
+LV_IMG_DECLARE(_weather_24_alpha_150x150);
+
 LV_IMG_DECLARE(_weatherBK_800x480);
 LV_IMG_DECLARE(_weather_0_alpha_150x150);
 LV_IMG_DECLARE(_weather_2_alpha_100x100);
 LV_IMG_DECLARE(_weather_12_alpha_100x100);
 LV_IMG_DECLARE(_weather_1_alpha_100x100);
 
-LV_IMG_DECLARE(_music_bck_800x480);
+LV_IMG_DECLARE(_musicBack2l1_800x480);
 LV_IMG_DECLARE(_1725420839434_alpha_250x250);
-LV_IMG_DECLARE(_music_bck_alpha_800x300);
+
+LV_IMG_DECLARE(_musicBack2l1_800x300);
+LV_IMG_DECLARE(_noVideo_alpha_800x450);
+LV_IMG_DECLARE(_musicBack2l1_alpha_800x480);
+LV_IMG_DECLARE(_Base_alpha_800x400);
+LV_IMG_DECLARE(_gauge_bg_alpha_250x250);
+LV_IMG_DECLARE(_gauge_bgL_alpha_250x250);
+LV_IMG_DECLARE(_gauge_needle_alpha_94x12);
+LV_IMG_DECLARE(_car_icon_alpha_75x15);
+LV_IMG_DECLARE(_gauge_needle_alpha_94x12);
+LV_IMG_DECLARE(_gauge_bg_alpha_250x250);
+LV_IMG_DECLARE(_car_icon_alpha_75x15);
+LV_IMG_DECLARE(_gauge_needle_alpha_94x12);
+LV_IMG_DECLARE(_line1_alpha_141x266);
+LV_IMG_DECLARE(_line2_alpha_141x266);
+LV_IMG_DECLARE(_line3_alpha_183x340);
+LV_IMG_DECLARE(_line4_alpha_183x340);
+LV_IMG_DECLARE(_cen1_alpha_56x300);
+LV_IMG_DECLARE(_arc1_alpha_362x17);
+LV_IMG_DECLARE(_arc2_alpha_362x17);
+LV_IMG_DECLARE(_ABS0_alpha_55x45);
+LV_IMG_DECLARE(_Door_alpha_45x45);
+LV_IMG_DECLARE(_Seatbelt_alpha_45x45);
+LV_IMG_DECLARE(_ABS1_alpha_55x45);
+LV_IMG_DECLARE(_ACC_alpha_45x40);
+LV_IMG_DECLARE(_HighBeam_alpha_42x35);
+LV_IMG_DECLARE(_RearFog_alpha_45x40);
+LV_IMG_DECLARE(_FrontFog_alpha_45x40);
+LV_IMG_DECLARE(_TurnSignalL_alpha_60x55);
+LV_IMG_DECLARE(_TurnSignalR_alpha_60x55);
+LV_IMG_DECLARE(_car1_alpha_100x100);
+LV_IMG_DECLARE(_weatherBK_alpha_800x480);
 
 LV_FONT_DECLARE(lv_font_SourceHanSerifSC_Regular_18)
 LV_FONT_DECLARE(lv_font_SourceHanSerifSC_Regular_40)
@@ -230,8 +360,15 @@ LV_FONT_DECLARE(lv_font_SourceHanSerifSC_Regular_25)
 LV_FONT_DECLARE(lv_font_SourceHanSerifSC_Regular_30)
 LV_FONT_DECLARE(lv_font_montserratMedium_16)
 LV_FONT_DECLARE(lv_font_montserratMedium_18)
+LV_FONT_DECLARE(lv_font_SourceHanSerifSC_Regular_24)
 LV_FONT_DECLARE(lv_font_montserratMedium_20)
 LV_FONT_DECLARE(lv_font_SourceHanSerifSC_Regular_12)
+LV_FONT_DECLARE(lv_font_Acme_Regular_25)
+LV_FONT_DECLARE(lv_font_Acme_Regular_12)
+LV_FONT_DECLARE(lv_font_Acme_Regular_145)
+LV_FONT_DECLARE(lv_font_Acme_Regular_35)
+LV_FONT_DECLARE(lv_font_montserratMedium_58)
+LV_FONT_DECLARE(lv_font_montserratMedium_12)
 
 
 #ifdef __cplusplus

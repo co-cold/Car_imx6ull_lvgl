@@ -13,7 +13,21 @@
 #include "events_init.h"
 #include "widgets_init.h"
 #include "custom.h"
-
+/*
+{
+  "weather_0.png": "晴",
+  "weather_1.png": "多云",
+  "weather_2.png": "阴",
+  "weather_3.png": "雾",
+  "weather_4.png": "小雨",
+  "weather_7.png": "雷阵雨",
+  "weather_12.png": "雨夹雪",
+  "weather_13.png": "小雪",
+  "weather_18.png": "扬沙",
+  "weather_22.png": "冰雹",
+  "weather_24.png": "霾"
+}
+*/
 
 
 void setup_scr_screen_weather(lv_ui *ui)
@@ -25,6 +39,317 @@ void setup_scr_screen_weather(lv_ui *ui)
 
     //Write style for screen_weather, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
     lv_obj_set_style_bg_opa(ui->screen_weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_weather_cont_Allweather
+    ui->screen_weather_cont_Allweather = lv_obj_create(ui->screen_weather);
+    lv_obj_set_pos(ui->screen_weather_cont_Allweather, -1081, 9);
+    lv_obj_set_size(ui->screen_weather_cont_Allweather, 300, 200);
+    lv_obj_set_scrollbar_mode(ui->screen_weather_cont_Allweather, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_add_flag(ui->screen_weather_cont_Allweather, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(ui->screen_weather_cont_Allweather, LV_OBJ_FLAG_HIDDEN);
+
+    //Write style for screen_weather_cont_Allweather, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_border_width(ui->screen_weather_cont_Allweather, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_border_opa(ui->screen_weather_cont_Allweather, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_border_color(ui->screen_weather_cont_Allweather, lv_color_hex(0x2195f6), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_border_side(ui->screen_weather_cont_Allweather, LV_BORDER_SIDE_FULL, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->screen_weather_cont_Allweather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui->screen_weather_cont_Allweather, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui->screen_weather_cont_Allweather, lv_color_hex(0xffffff), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_grad_dir(ui->screen_weather_cont_Allweather, LV_GRAD_DIR_NONE, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_top(ui->screen_weather_cont_Allweather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_bottom(ui->screen_weather_cont_Allweather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_left(ui->screen_weather_cont_Allweather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_right(ui->screen_weather_cont_Allweather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_width(ui->screen_weather_cont_Allweather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_weather_img_9
+    ui->screen_weather_img_9 = lv_img_create(ui->screen_weather_cont_Allweather);
+    lv_obj_add_flag(ui->screen_weather_img_9, LV_OBJ_FLAG_CLICKABLE);
+    lv_img_set_src(ui->screen_weather_img_9, &_weather_3_alpha_100x100);
+    lv_img_set_pivot(ui->screen_weather_img_9, 50,50);
+    lv_img_set_angle(ui->screen_weather_img_9, 0);
+    lv_obj_set_pos(ui->screen_weather_img_9, -14, 530);
+    lv_obj_set_size(ui->screen_weather_img_9, 100, 100);
+    lv_obj_add_flag(ui->screen_weather_img_9, LV_OBJ_FLAG_HIDDEN);
+
+    //Write style for screen_weather_img_9, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_img_recolor_opa(ui->screen_weather_img_9, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_img_opa(ui->screen_weather_img_9, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->screen_weather_img_9, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_clip_corner(ui->screen_weather_img_9, true, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_weather_img_4
+    ui->screen_weather_img_4 = lv_img_create(ui->screen_weather_cont_Allweather);
+    lv_obj_add_flag(ui->screen_weather_img_4, LV_OBJ_FLAG_CLICKABLE);
+    lv_img_set_src(ui->screen_weather_img_4, &_weather_18_alpha_100x100);
+    lv_img_set_pivot(ui->screen_weather_img_4, 50,50);
+    lv_img_set_angle(ui->screen_weather_img_4, 0);
+    lv_obj_set_pos(ui->screen_weather_img_4, -175, 184);
+    lv_obj_set_size(ui->screen_weather_img_4, 100, 100);
+    lv_obj_add_flag(ui->screen_weather_img_4, LV_OBJ_FLAG_HIDDEN);
+
+    //Write style for screen_weather_img_4, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_img_recolor_opa(ui->screen_weather_img_4, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_img_opa(ui->screen_weather_img_4, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->screen_weather_img_4, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_clip_corner(ui->screen_weather_img_4, true, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_weather_img_5
+    ui->screen_weather_img_5 = lv_img_create(ui->screen_weather_cont_Allweather);
+    lv_obj_add_flag(ui->screen_weather_img_5, LV_OBJ_FLAG_CLICKABLE);
+    lv_img_set_src(ui->screen_weather_img_5, &_weather_2_alpha_100x100);
+    lv_img_set_pivot(ui->screen_weather_img_5, 50,50);
+    lv_img_set_angle(ui->screen_weather_img_5, 0);
+    lv_obj_set_pos(ui->screen_weather_img_5, -175, 301);
+    lv_obj_set_size(ui->screen_weather_img_5, 100, 100);
+    lv_obj_add_flag(ui->screen_weather_img_5, LV_OBJ_FLAG_HIDDEN);
+
+    //Write style for screen_weather_img_5, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_img_recolor_opa(ui->screen_weather_img_5, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_img_opa(ui->screen_weather_img_5, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->screen_weather_img_5, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_clip_corner(ui->screen_weather_img_5, true, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_weather_img_6
+    ui->screen_weather_img_6 = lv_img_create(ui->screen_weather_cont_Allweather);
+    lv_obj_add_flag(ui->screen_weather_img_6, LV_OBJ_FLAG_CLICKABLE);
+    lv_img_set_src(ui->screen_weather_img_6, &_weather_22_alpha_100x100);
+    lv_img_set_pivot(ui->screen_weather_img_6, 50,50);
+    lv_img_set_angle(ui->screen_weather_img_6, 0);
+    lv_obj_set_pos(ui->screen_weather_img_6, -175, 410);
+    lv_obj_set_size(ui->screen_weather_img_6, 100, 100);
+    lv_obj_add_flag(ui->screen_weather_img_6, LV_OBJ_FLAG_HIDDEN);
+
+    //Write style for screen_weather_img_6, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_img_recolor_opa(ui->screen_weather_img_6, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_img_opa(ui->screen_weather_img_6, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->screen_weather_img_6, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_clip_corner(ui->screen_weather_img_6, true, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_weather_img_7
+    ui->screen_weather_img_7 = lv_img_create(ui->screen_weather_cont_Allweather);
+    lv_obj_add_flag(ui->screen_weather_img_7, LV_OBJ_FLAG_CLICKABLE);
+    lv_img_set_src(ui->screen_weather_img_7, &_weather_13_alpha_100x100);
+    lv_img_set_pivot(ui->screen_weather_img_7, 50,50);
+    lv_img_set_angle(ui->screen_weather_img_7, 0);
+    lv_obj_set_pos(ui->screen_weather_img_7, -175, 63);
+    lv_obj_set_size(ui->screen_weather_img_7, 100, 100);
+    lv_obj_add_flag(ui->screen_weather_img_7, LV_OBJ_FLAG_HIDDEN);
+
+    //Write style for screen_weather_img_7, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_img_recolor_opa(ui->screen_weather_img_7, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_img_opa(ui->screen_weather_img_7, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->screen_weather_img_7, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_clip_corner(ui->screen_weather_img_7, true, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_weather_img_8
+    ui->screen_weather_img_8 = lv_img_create(ui->screen_weather_cont_Allweather);
+    lv_obj_add_flag(ui->screen_weather_img_8, LV_OBJ_FLAG_CLICKABLE);
+    lv_img_set_src(ui->screen_weather_img_8, &_weather_24_alpha_100x100);
+    lv_img_set_pivot(ui->screen_weather_img_8, 50,50);
+    lv_img_set_angle(ui->screen_weather_img_8, 0);
+    lv_obj_set_pos(ui->screen_weather_img_8, -175, 530);
+    lv_obj_set_size(ui->screen_weather_img_8, 100, 100);
+    lv_obj_add_flag(ui->screen_weather_img_8, LV_OBJ_FLAG_HIDDEN);
+
+    //Write style for screen_weather_img_8, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_img_recolor_opa(ui->screen_weather_img_8, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_img_opa(ui->screen_weather_img_8, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->screen_weather_img_8, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_clip_corner(ui->screen_weather_img_8, true, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_weather_img_10
+    ui->screen_weather_img_10 = lv_img_create(ui->screen_weather_cont_Allweather);
+    lv_obj_add_flag(ui->screen_weather_img_10, LV_OBJ_FLAG_CLICKABLE);
+    lv_img_set_src(ui->screen_weather_img_10, &_weather_4_alpha_100x100);
+    lv_img_set_pivot(ui->screen_weather_img_10, 50,50);
+    lv_img_set_angle(ui->screen_weather_img_10, 0);
+    lv_obj_set_pos(ui->screen_weather_img_10, 142, 530);
+    lv_obj_set_size(ui->screen_weather_img_10, 100, 100);
+    lv_obj_add_flag(ui->screen_weather_img_10, LV_OBJ_FLAG_HIDDEN);
+
+    //Write style for screen_weather_img_10, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_img_recolor_opa(ui->screen_weather_img_10, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_img_opa(ui->screen_weather_img_10, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->screen_weather_img_10, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_clip_corner(ui->screen_weather_img_10, true, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_weather_img_15
+    ui->screen_weather_img_15 = lv_img_create(ui->screen_weather_cont_Allweather);
+    lv_obj_add_flag(ui->screen_weather_img_15, LV_OBJ_FLAG_CLICKABLE);
+    lv_img_set_src(ui->screen_weather_img_15, &_weather_18_alpha_150x150);
+    lv_img_set_pivot(ui->screen_weather_img_15, 50,50);
+    lv_img_set_angle(ui->screen_weather_img_15, 0);
+    lv_obj_set_pos(ui->screen_weather_img_15, 483, -179);
+    lv_obj_set_size(ui->screen_weather_img_15, 150, 150);
+    lv_obj_add_flag(ui->screen_weather_img_15, LV_OBJ_FLAG_HIDDEN);
+
+    //Write style for screen_weather_img_15, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_img_recolor_opa(ui->screen_weather_img_15, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_img_opa(ui->screen_weather_img_15, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->screen_weather_img_15, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_clip_corner(ui->screen_weather_img_15, true, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_weather_img_11
+    ui->screen_weather_img_11 = lv_img_create(ui->screen_weather_cont_Allweather);
+    lv_obj_add_flag(ui->screen_weather_img_11, LV_OBJ_FLAG_CLICKABLE);
+    lv_img_set_src(ui->screen_weather_img_11, &_weather_7_alpha_100x100);
+    lv_img_set_pivot(ui->screen_weather_img_11, 50,50);
+    lv_img_set_angle(ui->screen_weather_img_11, 0);
+    lv_obj_set_pos(ui->screen_weather_img_11, 282, 530);
+    lv_obj_set_size(ui->screen_weather_img_11, 100, 100);
+    lv_obj_add_flag(ui->screen_weather_img_11, LV_OBJ_FLAG_HIDDEN);
+
+    //Write style for screen_weather_img_11, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_img_recolor_opa(ui->screen_weather_img_11, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_img_opa(ui->screen_weather_img_11, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->screen_weather_img_11, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_clip_corner(ui->screen_weather_img_11, true, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_weather_img_12
+    ui->screen_weather_img_12 = lv_img_create(ui->screen_weather_cont_Allweather);
+    lv_obj_add_flag(ui->screen_weather_img_12, LV_OBJ_FLAG_CLICKABLE);
+    lv_img_set_src(ui->screen_weather_img_12, &_weather_1_alpha_150x150);
+    lv_img_set_pivot(ui->screen_weather_img_12, 50,50);
+    lv_img_set_angle(ui->screen_weather_img_12, 0);
+    lv_obj_set_pos(ui->screen_weather_img_12, 15, -182);
+    lv_obj_set_size(ui->screen_weather_img_12, 150, 150);
+    lv_obj_add_flag(ui->screen_weather_img_12, LV_OBJ_FLAG_HIDDEN);
+
+    //Write style for screen_weather_img_12, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_img_recolor_opa(ui->screen_weather_img_12, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_img_opa(ui->screen_weather_img_12, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->screen_weather_img_12, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_clip_corner(ui->screen_weather_img_12, true, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_weather_img_13
+    ui->screen_weather_img_13 = lv_img_create(ui->screen_weather_cont_Allweather);
+    lv_obj_add_flag(ui->screen_weather_img_13, LV_OBJ_FLAG_CLICKABLE);
+    lv_img_set_src(ui->screen_weather_img_13, &_weather_13_alpha_150x150);
+    lv_img_set_pivot(ui->screen_weather_img_13, 50,50);
+    lv_img_set_angle(ui->screen_weather_img_13, 0);
+    lv_obj_set_pos(ui->screen_weather_img_13, 333, -182);
+    lv_obj_set_size(ui->screen_weather_img_13, 150, 150);
+    lv_obj_add_flag(ui->screen_weather_img_13, LV_OBJ_FLAG_HIDDEN);
+
+    //Write style for screen_weather_img_13, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_img_recolor_opa(ui->screen_weather_img_13, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_img_opa(ui->screen_weather_img_13, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->screen_weather_img_13, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_clip_corner(ui->screen_weather_img_13, true, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_weather_img_14
+    ui->screen_weather_img_14 = lv_img_create(ui->screen_weather_cont_Allweather);
+    lv_obj_add_flag(ui->screen_weather_img_14, LV_OBJ_FLAG_CLICKABLE);
+    lv_img_set_src(ui->screen_weather_img_14, &_weather_12_alpha_150x150);
+    lv_img_set_pivot(ui->screen_weather_img_14, 50,50);
+    lv_img_set_angle(ui->screen_weather_img_14, 0);
+    lv_obj_set_pos(ui->screen_weather_img_14, 165, -187);
+    lv_obj_set_size(ui->screen_weather_img_14, 150, 150);
+    lv_obj_add_flag(ui->screen_weather_img_14, LV_OBJ_FLAG_HIDDEN);
+
+    //Write style for screen_weather_img_14, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_img_recolor_opa(ui->screen_weather_img_14, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_img_opa(ui->screen_weather_img_14, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->screen_weather_img_14, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_clip_corner(ui->screen_weather_img_14, true, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_weather_img_21
+    ui->screen_weather_img_21 = lv_img_create(ui->screen_weather_cont_Allweather);
+    lv_obj_add_flag(ui->screen_weather_img_21, LV_OBJ_FLAG_CLICKABLE);
+    lv_img_set_src(ui->screen_weather_img_21, &_weather_7_alpha_150x150);
+    lv_img_set_pivot(ui->screen_weather_img_21, 50,50);
+    lv_img_set_angle(ui->screen_weather_img_21, 0);
+    lv_obj_set_pos(ui->screen_weather_img_21, 844, 451);
+    lv_obj_set_size(ui->screen_weather_img_21, 150, 150);
+    lv_obj_add_flag(ui->screen_weather_img_21, LV_OBJ_FLAG_HIDDEN);
+
+    //Write style for screen_weather_img_21, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_img_recolor_opa(ui->screen_weather_img_21, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_img_opa(ui->screen_weather_img_21, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->screen_weather_img_21, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_clip_corner(ui->screen_weather_img_21, true, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_weather_img_16
+    ui->screen_weather_img_16 = lv_img_create(ui->screen_weather_cont_Allweather);
+    lv_obj_add_flag(ui->screen_weather_img_16, LV_OBJ_FLAG_CLICKABLE);
+    lv_img_set_src(ui->screen_weather_img_16, &_weather_2_alpha_150x150);
+    lv_img_set_pivot(ui->screen_weather_img_16, 50,50);
+    lv_img_set_angle(ui->screen_weather_img_16, 0);
+    lv_obj_set_pos(ui->screen_weather_img_16, 666, -182);
+    lv_obj_set_size(ui->screen_weather_img_16, 150, 150);
+    lv_obj_add_flag(ui->screen_weather_img_16, LV_OBJ_FLAG_HIDDEN);
+
+    //Write style for screen_weather_img_16, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_img_recolor_opa(ui->screen_weather_img_16, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_img_opa(ui->screen_weather_img_16, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->screen_weather_img_16, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_clip_corner(ui->screen_weather_img_16, true, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_weather_img_17
+    ui->screen_weather_img_17 = lv_img_create(ui->screen_weather_cont_Allweather);
+    lv_obj_add_flag(ui->screen_weather_img_17, LV_OBJ_FLAG_CLICKABLE);
+    lv_img_set_src(ui->screen_weather_img_17, &_weather_22_alpha_150x150);
+    lv_img_set_pivot(ui->screen_weather_img_17, 50,50);
+    lv_img_set_angle(ui->screen_weather_img_17, 0);
+    lv_obj_set_pos(ui->screen_weather_img_17, 836, -179);
+    lv_obj_set_size(ui->screen_weather_img_17, 150, 150);
+    lv_obj_add_flag(ui->screen_weather_img_17, LV_OBJ_FLAG_HIDDEN);
+
+    //Write style for screen_weather_img_17, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_img_recolor_opa(ui->screen_weather_img_17, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_img_opa(ui->screen_weather_img_17, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->screen_weather_img_17, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_clip_corner(ui->screen_weather_img_17, true, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_weather_img_20
+    ui->screen_weather_img_20 = lv_img_create(ui->screen_weather_cont_Allweather);
+    lv_obj_add_flag(ui->screen_weather_img_20, LV_OBJ_FLAG_CLICKABLE);
+    lv_img_set_src(ui->screen_weather_img_20, &_weather_4_alpha_150x150);
+    lv_img_set_pivot(ui->screen_weather_img_20, 50,50);
+    lv_img_set_angle(ui->screen_weather_img_20, 0);
+    lv_obj_set_pos(ui->screen_weather_img_20, 836, 301);
+    lv_obj_set_size(ui->screen_weather_img_20, 150, 150);
+    lv_obj_add_flag(ui->screen_weather_img_20, LV_OBJ_FLAG_HIDDEN);
+
+    //Write style for screen_weather_img_20, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_img_recolor_opa(ui->screen_weather_img_20, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_img_opa(ui->screen_weather_img_20, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->screen_weather_img_20, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_clip_corner(ui->screen_weather_img_20, true, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_weather_img_19
+    ui->screen_weather_img_19 = lv_img_create(ui->screen_weather_cont_Allweather);
+    lv_obj_add_flag(ui->screen_weather_img_19, LV_OBJ_FLAG_CLICKABLE);
+    lv_img_set_src(ui->screen_weather_img_19, &_weather_3_alpha_150x150);
+    lv_img_set_pivot(ui->screen_weather_img_19, 50,50);
+    lv_img_set_angle(ui->screen_weather_img_19, 0);
+    lv_obj_set_pos(ui->screen_weather_img_19, 836, 147);
+    lv_obj_set_size(ui->screen_weather_img_19, 150, 150);
+    lv_obj_add_flag(ui->screen_weather_img_19, LV_OBJ_FLAG_HIDDEN);
+
+    //Write style for screen_weather_img_19, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_img_recolor_opa(ui->screen_weather_img_19, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_img_opa(ui->screen_weather_img_19, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->screen_weather_img_19, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_clip_corner(ui->screen_weather_img_19, true, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_weather_img_18
+    ui->screen_weather_img_18 = lv_img_create(ui->screen_weather_cont_Allweather);
+    lv_obj_add_flag(ui->screen_weather_img_18, LV_OBJ_FLAG_CLICKABLE);
+    lv_img_set_src(ui->screen_weather_img_18, &_weather_24_alpha_150x150);
+    lv_img_set_pivot(ui->screen_weather_img_18, 50,50);
+    lv_img_set_angle(ui->screen_weather_img_18, 0);
+    lv_obj_set_pos(ui->screen_weather_img_18, 844, 0);
+    lv_obj_set_size(ui->screen_weather_img_18, 150, 150);
+    lv_obj_add_flag(ui->screen_weather_img_18, LV_OBJ_FLAG_HIDDEN);
+
+    //Write style for screen_weather_img_18, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_img_recolor_opa(ui->screen_weather_img_18, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_img_opa(ui->screen_weather_img_18, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->screen_weather_img_18, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_clip_corner(ui->screen_weather_img_18, true, LV_PART_MAIN|LV_STATE_DEFAULT);
 
     //Write codes screen_weather_cont_weather
     ui->screen_weather_cont_weather = lv_obj_create(ui->screen_weather);
@@ -73,7 +398,7 @@ void setup_scr_screen_weather(lv_ui *ui)
     lv_obj_set_style_bg_grad_dir(ui->screen_weather_ta_city, LV_GRAD_DIR_NONE, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_border_width(ui->screen_weather_ta_city, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_border_opa(ui->screen_weather_ta_city, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_border_color(ui->screen_weather_ta_city, lv_color_hex(0xe6e6e6), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_border_color(ui->screen_weather_ta_city, lv_color_hex(0x000000), LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_border_side(ui->screen_weather_ta_city, LV_BORDER_SIDE_FULL, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_width(ui->screen_weather_ta_city, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_pad_top(ui->screen_weather_ta_city, 5, LV_PART_MAIN|LV_STATE_DEFAULT);
@@ -102,7 +427,10 @@ void setup_scr_screen_weather(lv_ui *ui)
     lv_obj_set_style_bg_opa(ui->screen_weather_btn_find, 90, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_color(ui->screen_weather_btn_find, lv_color_hex(0x000000), LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_grad_dir(ui->screen_weather_btn_find, LV_GRAD_DIR_NONE, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_border_width(ui->screen_weather_btn_find, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_border_width(ui->screen_weather_btn_find, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_border_opa(ui->screen_weather_btn_find, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_border_color(ui->screen_weather_btn_find, lv_color_hex(0x000000), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_border_side(ui->screen_weather_btn_find, LV_BORDER_SIDE_FULL, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(ui->screen_weather_btn_find, 5, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_width(ui->screen_weather_btn_find, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(ui->screen_weather_btn_find, lv_color_hex(0xffffff), LV_PART_MAIN|LV_STATE_DEFAULT);
@@ -125,7 +453,10 @@ void setup_scr_screen_weather(lv_ui *ui)
     lv_obj_set_style_bg_opa(ui->screen_weather_btn_back, 90, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_color(ui->screen_weather_btn_back, lv_color_hex(0x000000), LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_grad_dir(ui->screen_weather_btn_back, LV_GRAD_DIR_NONE, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_border_width(ui->screen_weather_btn_back, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_border_width(ui->screen_weather_btn_back, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_border_opa(ui->screen_weather_btn_back, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_border_color(ui->screen_weather_btn_back, lv_color_hex(0x000000), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_border_side(ui->screen_weather_btn_back, LV_BORDER_SIDE_FULL, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(ui->screen_weather_btn_back, 5, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_width(ui->screen_weather_btn_back, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(ui->screen_weather_btn_back, lv_color_hex(0xffffff), LV_PART_MAIN|LV_STATE_DEFAULT);
@@ -181,7 +512,7 @@ void setup_scr_screen_weather(lv_ui *ui)
     lv_img_set_src(ui->screen_weather_img_weather, &_weather_0_alpha_150x150);
     lv_img_set_pivot(ui->screen_weather_img_weather, 50,50);
     lv_img_set_angle(ui->screen_weather_img_weather, 0);
-    lv_obj_set_pos(ui->screen_weather_img_weather, 5, 43);
+    lv_obj_set_pos(ui->screen_weather_img_weather, 5, 42);
     lv_obj_set_size(ui->screen_weather_img_weather, 150, 150);
 
     //Write style for screen_weather_img_weather, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
@@ -352,7 +683,7 @@ void setup_scr_screen_weather(lv_ui *ui)
     lv_obj_set_style_border_width(ui->screen_weather_label_3day, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(ui->screen_weather_label_3day, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(ui->screen_weather_label_3day, lv_color_hex(0x000000), LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui->screen_weather_label_3day, &lv_font_SourceHanSerifSC_Regular_16, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui->screen_weather_label_3day, &lv_font_SourceHanSerifSC_Regular_18, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui->screen_weather_label_3day, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_letter_space(ui->screen_weather_label_3day, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_line_space(ui->screen_weather_label_3day, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
@@ -386,6 +717,29 @@ void setup_scr_screen_weather(lv_ui *ui)
     lv_obj_set_style_pad_bottom(ui->screen_weather_label_3tem, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_pad_left(ui->screen_weather_label_3tem, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_width(ui->screen_weather_label_3tem, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_weather_label_3weather
+    ui->screen_weather_label_3weather = lv_label_create(ui->screen_weather_cont_day3);
+    lv_label_set_text(ui->screen_weather_label_3weather, "阴");
+    lv_label_set_long_mode(ui->screen_weather_label_3weather, LV_LABEL_LONG_WRAP);
+    lv_obj_set_pos(ui->screen_weather_label_3weather, 110, 68);
+    lv_obj_set_size(ui->screen_weather_label_3weather, 75, 50);
+
+    //Write style for screen_weather_label_3weather, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_border_width(ui->screen_weather_label_3weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->screen_weather_label_3weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui->screen_weather_label_3weather, lv_color_hex(0x000000), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui->screen_weather_label_3weather, &lv_font_SourceHanSerifSC_Regular_25, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui->screen_weather_label_3weather, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_letter_space(ui->screen_weather_label_3weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_line_space(ui->screen_weather_label_3weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui->screen_weather_label_3weather, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui->screen_weather_label_3weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_top(ui->screen_weather_label_3weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_right(ui->screen_weather_label_3weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_bottom(ui->screen_weather_label_3weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_left(ui->screen_weather_label_3weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_width(ui->screen_weather_label_3weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
     //Write codes screen_weather_cont_day2
     ui->screen_weather_cont_day2 = lv_obj_create(ui->screen_weather);
@@ -434,7 +788,7 @@ void setup_scr_screen_weather(lv_ui *ui)
     lv_obj_set_style_border_width(ui->screen_weather_label_2day, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(ui->screen_weather_label_2day, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(ui->screen_weather_label_2day, lv_color_hex(0x000000), LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui->screen_weather_label_2day, &lv_font_SourceHanSerifSC_Regular_16, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui->screen_weather_label_2day, &lv_font_SourceHanSerifSC_Regular_18, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui->screen_weather_label_2day, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_letter_space(ui->screen_weather_label_2day, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_line_space(ui->screen_weather_label_2day, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
@@ -468,6 +822,29 @@ void setup_scr_screen_weather(lv_ui *ui)
     lv_obj_set_style_pad_bottom(ui->screen_weather_label_2tem, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_pad_left(ui->screen_weather_label_2tem, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_width(ui->screen_weather_label_2tem, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_weather_label_2weather
+    ui->screen_weather_label_2weather = lv_label_create(ui->screen_weather_cont_day2);
+    lv_label_set_text(ui->screen_weather_label_2weather, "雨夹雪");
+    lv_label_set_long_mode(ui->screen_weather_label_2weather, LV_LABEL_LONG_WRAP);
+    lv_obj_set_pos(ui->screen_weather_label_2weather, 110, 68);
+    lv_obj_set_size(ui->screen_weather_label_2weather, 75, 50);
+
+    //Write style for screen_weather_label_2weather, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_border_width(ui->screen_weather_label_2weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->screen_weather_label_2weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui->screen_weather_label_2weather, lv_color_hex(0x000000), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui->screen_weather_label_2weather, &lv_font_SourceHanSerifSC_Regular_25, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui->screen_weather_label_2weather, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_letter_space(ui->screen_weather_label_2weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_line_space(ui->screen_weather_label_2weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui->screen_weather_label_2weather, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui->screen_weather_label_2weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_top(ui->screen_weather_label_2weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_right(ui->screen_weather_label_2weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_bottom(ui->screen_weather_label_2weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_left(ui->screen_weather_label_2weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_width(ui->screen_weather_label_2weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
     //Write codes screen_weather_cont_day1
     ui->screen_weather_cont_day1 = lv_obj_create(ui->screen_weather);
@@ -516,7 +893,7 @@ void setup_scr_screen_weather(lv_ui *ui)
     lv_obj_set_style_border_width(ui->screen_weather_label_1day, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(ui->screen_weather_label_1day, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(ui->screen_weather_label_1day, lv_color_hex(0x000000), LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui->screen_weather_label_1day, &lv_font_SourceHanSerifSC_Regular_16, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui->screen_weather_label_1day, &lv_font_SourceHanSerifSC_Regular_18, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui->screen_weather_label_1day, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_letter_space(ui->screen_weather_label_1day, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_line_space(ui->screen_weather_label_1day, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
@@ -550,6 +927,29 @@ void setup_scr_screen_weather(lv_ui *ui)
     lv_obj_set_style_pad_bottom(ui->screen_weather_label_1tem, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_pad_left(ui->screen_weather_label_1tem, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_width(ui->screen_weather_label_1tem, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_weather_label_1weather
+    ui->screen_weather_label_1weather = lv_label_create(ui->screen_weather_cont_day1);
+    lv_label_set_text(ui->screen_weather_label_1weather, "多云");
+    lv_label_set_long_mode(ui->screen_weather_label_1weather, LV_LABEL_LONG_WRAP);
+    lv_obj_set_pos(ui->screen_weather_label_1weather, 110, 68);
+    lv_obj_set_size(ui->screen_weather_label_1weather, 75, 50);
+
+    //Write style for screen_weather_label_1weather, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_border_width(ui->screen_weather_label_1weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->screen_weather_label_1weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui->screen_weather_label_1weather, lv_color_hex(0x000000), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui->screen_weather_label_1weather, &lv_font_SourceHanSerifSC_Regular_25, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui->screen_weather_label_1weather, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_letter_space(ui->screen_weather_label_1weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_line_space(ui->screen_weather_label_1weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui->screen_weather_label_1weather, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui->screen_weather_label_1weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_top(ui->screen_weather_label_1weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_right(ui->screen_weather_label_1weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_bottom(ui->screen_weather_label_1weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_left(ui->screen_weather_label_1weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_width(ui->screen_weather_label_1weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
     //The custom code of screen_weather.
     lv_obj_clear_flag(ui->screen_weather, LV_OBJ_FLAG_SCROLLABLE);

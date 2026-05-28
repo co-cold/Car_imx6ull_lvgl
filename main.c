@@ -33,12 +33,11 @@ int lvgl_init()
     fbdev_init();
 
     /*A small buffer for LittlevGL to draw the screen's content*/
-    static lv_color_t buf1[DISP_BUF_SIZE];
-    static lv_color_t buf2[DISP_BUF_SIZE];
+    static lv_color_t buf[2][DISP_BUF_SIZE];
 
     /*Initialize a descriptor for the buffer*/
     static lv_disp_draw_buf_t disp_buf;
-    lv_disp_draw_buf_init(&disp_buf, buf1, buf2, DISP_BUF_SIZE);
+    lv_disp_draw_buf_init(&disp_buf, buf[0], buf[1], DISP_BUF_SIZE);
 
     /*Initialize and register a display driver*/
     static lv_disp_drv_t disp_drv;
@@ -47,8 +46,6 @@ int lvgl_init()
     disp_drv.flush_cb   = fbdev_flush;
     disp_drv.hor_res    = 800;
     disp_drv.ver_res    = 480;
-    disp_drv.full_refresh = 0;  // 部分刷新
-    disp_drv.direct_mode = 0;   // 使用绘制缓冲区
     lv_disp_drv_register(&disp_drv);
 
     evdev_init();
@@ -260,7 +257,7 @@ int main(int argc, char *argv[])
     printf("JPEG decoder: disabled\n");
     #endif
     
-    lv_freetype_init(8, 16, 256 * 1024);
+    //lv_freetype_init(8, 16, 256 * 1024);
     /*Create a Demo*/
     // lv_demo_widgets();
     // lv_demo_music();
@@ -268,7 +265,7 @@ int main(int argc, char *argv[])
     setup_ui(&guider_ui);               // 调用GUI Guider生成的UI设置函数，初始化界面
     events_init(&guider_ui);            // 初始化事件处理函数，绑定UI元素与事件
     custom_init(&guider_ui);            // 初始化自定义功能
-
+    printf("bug\n");
     /*Handle LitlevGL tasks (tickless mode)*/
     while(1) {
         lv_timer_handler();

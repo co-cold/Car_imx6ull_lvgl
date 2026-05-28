@@ -48,12 +48,11 @@ void setup_scr_screen_video(lv_ui *ui)
     //Write codes screen_video_img_video
     ui->screen_video_img_video = lv_img_create(ui->screen_video_cont_video);
     lv_obj_add_flag(ui->screen_video_img_video, LV_OBJ_FLAG_CLICKABLE);
+    lv_img_set_src(ui->screen_video_img_video, &_noVideo_alpha_800x450);
     lv_img_set_pivot(ui->screen_video_img_video, 50,50);
     lv_img_set_angle(ui->screen_video_img_video, 0);
-    // 使用640x360分辨率，减轻i.MX6ULL性能压力
+    lv_obj_set_pos(ui->screen_video_img_video, 0, 15);
     lv_obj_set_size(ui->screen_video_img_video, 800, 450);
-    // 居中显示
-    lv_obj_center(ui->screen_video_img_video);
 
     //Write style for screen_video_img_video, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
     lv_obj_set_style_img_recolor_opa(ui->screen_video_img_video, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
