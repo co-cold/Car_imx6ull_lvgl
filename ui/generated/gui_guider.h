@@ -324,11 +324,10 @@ LV_IMG_DECLARE(_noVideo_alpha_800x450);
 LV_IMG_DECLARE(_musicBack2l1_alpha_800x480);
 LV_IMG_DECLARE(_Base_alpha_800x400);
 LV_IMG_DECLARE(_gauge_bg_alpha_250x250);
-LV_IMG_DECLARE(_gauge_bgL_alpha_250x250);
 LV_IMG_DECLARE(_gauge_needle_alpha_94x12);
 LV_IMG_DECLARE(_car_icon_alpha_75x15);
 LV_IMG_DECLARE(_gauge_needle_alpha_94x12);
-LV_IMG_DECLARE(_gauge_bg_alpha_250x250);
+LV_IMG_DECLARE(_gauge_bgL_alpha_250x250);
 LV_IMG_DECLARE(_car_icon_alpha_75x15);
 LV_IMG_DECLARE(_gauge_needle_alpha_94x12);
 LV_IMG_DECLARE(_line1_alpha_141x266);
@@ -349,6 +348,7 @@ LV_IMG_DECLARE(_FrontFog_alpha_45x40);
 LV_IMG_DECLARE(_TurnSignalL_alpha_60x55);
 LV_IMG_DECLARE(_TurnSignalR_alpha_60x55);
 LV_IMG_DECLARE(_car1_alpha_100x100);
+LV_IMG_DECLARE(_gauge_indicator_alpha_220x220);
 LV_IMG_DECLARE(_weatherBK_alpha_800x480);
 
 LV_FONT_DECLARE(lv_font_SourceHanSerifSC_Regular_18)

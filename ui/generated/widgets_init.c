@@ -114,11 +114,13 @@ void screen_home_digital_clock_status_timer(lv_timer_t *timer)
 
     if (lv_obj_is_valid(guider_ui.screen_clock_analog_clock_1))
     {
-        // 24小时制
+        int32_t hour_12 = timeinfo->tm_hour % 12;  // 直接使用 0-11 的小时值
+    
+        // 12小时制
         lv_analogclock_set_time(guider_ui.screen_clock_analog_clock_1, 
-            screen_home_digital_clock_status_hour_value, 
-            screen_home_digital_clock_status_min_value,
-            screen_home_digital_clock_status_sec_value);
+            hour_12,
+            timeinfo->tm_min,
+            timeinfo->tm_sec);
 
     }
 }
@@ -145,8 +147,9 @@ void screen_home_digital_clock_status_timer(lv_timer_t *timer)
 //     screen_home_digital_clock_status_timer_enabled = true;
 // }
 
+// int32_t hour_12 = screen_home_digital_clock_status_hour_value % 12;  // 直接使用 0-11 的小时值
 // lv_analogclock_set_time(ui->screen_clock_analog_clock_1, 
-// screen_home_digital_clock_status_hour_value, 
+// hour_12, 
 // screen_home_digital_clock_status_min_value,
 // screen_home_digital_clock_status_sec_value);
 // // create timer

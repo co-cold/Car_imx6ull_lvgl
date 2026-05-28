@@ -343,3 +343,42 @@ void stop_dashboard_animation(void) {
     }
     ind_state = 0;
 }
+
+/**
+  实现图片的注入meter_arc
+*/
+// 1. 定义事件回调函数
+static void meter_arc_img_event_cb(lv_event_t * e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    
+    if(code == LV_EVENT_DRAW_PART_BEGIN) {
+        lv_obj_draw_part_dsc_t * dsc = lv_event_get_draw_part_dsc(e);
+        
+        // 检查是否是 Meter 的 Arc 绘制部分
+        // 注意：这里需要确认 class_p 的判断方式，不同版本可能略有差异
+        // 通常我们可以简单判断 type 是否为 LV_METER_DRAW_PART_ARC
+        if(dsc->type == LV_METER_DRAW_PART_ARC && dsc->arc_dsc) {
+            
+            // 🎯 核心操作：注入图片源
+            dsc->arc_dsc->img_src = &_gauge_indicator_alpha_220x220;
+            
+            // 可选：如果你想针对特定的 Arc Indicator，可以通过 sub_part_ptr 判断
+            // lv_meter_indicator_t * indic = (lv_meter_indicator_t *)dsc->sub_part_ptr;
+            // if(indic == ui->screen_carDashboard_meter_rSpeed_scale_0_arc_0) { ... }
+        }
+    }
+}
+
+// 2. 初始化函数（在 GUI Guider 初始化后调用）
+void setup_meter_arc_image(lv_ui *ui)
+{
+    // 假设你的 meter 对象名为 screen_carDashboard_meter_rSpeed
+    // 你需要根据 GUI Guider 实际生成的变量名来调整
+    lv_obj_t * Cmeter = ui->screen_carDashboard_meter_cSpeed;
+    lv_obj_t * Rmeter = ui->screen_carDashboard_meter_rSpeed;
+    
+    // 给 meter 添加事件回调
+    lv_obj_add_event_cb(Cmeter, meter_arc_img_event_cb, LV_EVENT_DRAW_PART_BEGIN, NULL);
+    lv_obj_add_event_cb(Rmeter, meter_arc_img_event_cb, LV_EVENT_DRAW_PART_BEGIN, NULL);
+}

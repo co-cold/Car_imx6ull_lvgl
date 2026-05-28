@@ -196,7 +196,7 @@ void setup_scr_screen_carDashboard(lv_ui *ui)
     lv_meter_set_scale_range(ui->screen_carDashboard_meter_rSpeed, ui->screen_carDashboard_meter_rSpeed_scale_0, 0, 120, 300, 70);
 
     // add arc for ui->screen_carDashboard_meter_rSpeed_scale_0
-    ui->screen_carDashboard_meter_rSpeed_scale_0_arc_0 = lv_meter_add_arc(ui->screen_carDashboard_meter_rSpeed, ui->screen_carDashboard_meter_rSpeed_scale_0, 12, lv_color_hex(0xff0027), -5);
+    ui->screen_carDashboard_meter_rSpeed_scale_0_arc_0 = lv_meter_add_arc(ui->screen_carDashboard_meter_rSpeed, ui->screen_carDashboard_meter_rSpeed_scale_0, 20, lv_color_hex(0xff0027), -5);
     lv_meter_set_indicator_start_value(ui->screen_carDashboard_meter_rSpeed, ui->screen_carDashboard_meter_rSpeed_scale_0_arc_0, 8);
     lv_meter_set_indicator_end_value(ui->screen_carDashboard_meter_rSpeed, ui->screen_carDashboard_meter_rSpeed_scale_0_arc_0, 8);
 
@@ -347,7 +347,7 @@ void setup_scr_screen_carDashboard(lv_ui *ui)
     lv_meter_set_scale_range(ui->screen_carDashboard_meter_cSpeed, ui->screen_carDashboard_meter_cSpeed_scale_0, 0, 120, 300, 70);
 
     // add arc for ui->screen_carDashboard_meter_cSpeed_scale_0
-    ui->screen_carDashboard_meter_cSpeed_scale_0_arc_0 = lv_meter_add_arc(ui->screen_carDashboard_meter_cSpeed, ui->screen_carDashboard_meter_cSpeed_scale_0, 12, lv_color_hex(0xff0027), -5);
+    ui->screen_carDashboard_meter_cSpeed_scale_0_arc_0 = lv_meter_add_arc(ui->screen_carDashboard_meter_cSpeed, ui->screen_carDashboard_meter_cSpeed_scale_0, 20, lv_color_hex(0xff0027), -5);
     lv_meter_set_indicator_start_value(ui->screen_carDashboard_meter_cSpeed, ui->screen_carDashboard_meter_cSpeed_scale_0_arc_0, 8);
     lv_meter_set_indicator_end_value(ui->screen_carDashboard_meter_cSpeed, ui->screen_carDashboard_meter_cSpeed_scale_0_arc_0, 8);
 
@@ -781,7 +781,11 @@ void setup_scr_screen_carDashboard(lv_ui *ui)
 
     //The custom code of screen_carDashboard.
     //img_arc
+//     ui->screen_carDashboard_meter_rSpeed_scale_0_arc_0 = lv_meter_add_arc(ui->screen_carDashboard_meter_rSpeed,
+//              ui->screen_carDashboard_meter_rSpeed_scale_0, 12, lv_color_hex(0xff0027), -5);
+// lv_style_set_arc_img_src(ui->screen_carDashboard_meter_rSpeed_scale_0_arc_0, &_gauge_indicator_alpha_220x220);
 
+    setup_meter_arc_image(ui);
 
     //Update current screen layout.
     lv_obj_update_layout(ui->screen_carDashboard);

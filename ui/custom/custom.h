@@ -30,6 +30,8 @@ float slider_update_volume_label(lv_event_t *e);
 void start_dashboard_animation(lv_ui *ui);
 void stop_dashboard_animation(void);
 
+void setup_meter_arc_image(lv_ui *ui);
+
 #ifdef __cplusplus
 }
 #endif

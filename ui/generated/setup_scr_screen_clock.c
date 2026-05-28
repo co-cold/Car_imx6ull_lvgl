@@ -53,11 +53,12 @@ void setup_scr_screen_clock(lv_ui *ui)
     lv_analogclock_hide_digits(ui->screen_clock_analog_clock_1, false);
     lv_analogclock_set_major_ticks(ui->screen_clock_analog_clock_1, 5, 10, lv_color_hex(0x555555), 10);
     lv_analogclock_set_ticks(ui->screen_clock_analog_clock_1, 5, 5, lv_color_hex(0x333333));
-    lv_analogclock_set_hour_needle_line(ui->screen_clock_analog_clock_1, 5, lv_color_hex(0x000000), -40);
+    lv_analogclock_set_hour_needle_line(ui->screen_clock_analog_clock_1, 5, lv_color_hex(0x000000), -50);
     lv_analogclock_set_min_needle_line(ui->screen_clock_analog_clock_1, 4, lv_color_hex(0x000000), -30);
     lv_analogclock_set_sec_needle_line(ui->screen_clock_analog_clock_1, 3, lv_color_hex(0x000000), -10);
+    int32_t hour_12 = screen_home_digital_clock_status_hour_value % 12; 
     lv_analogclock_set_time(ui->screen_clock_analog_clock_1, 
-        screen_home_digital_clock_status_hour_value, 
+        hour_12, 
         screen_home_digital_clock_status_min_value,
         screen_home_digital_clock_status_sec_value);
     lv_obj_set_style_radius(ui->screen_clock_analog_clock_1, LV_RADIUS_CIRCLE, LV_PART_MAIN|LV_STATE_DEFAULT);
