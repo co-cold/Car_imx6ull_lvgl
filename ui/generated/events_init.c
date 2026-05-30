@@ -521,6 +521,18 @@ static void screen_clock_event_handler (lv_event_t *e)
         set_status_bar(0);
         break;
     }
+    case LV_EVENT_SCREEN_LOADED:
+    {
+        custom_set_Aclock(guider_ui.screen_clock_analog_clock_1);
+        custom_set_Dclock(guider_ui.screen_clock_digital_clock_1);
+        custom_set_Ctimer();
+        break;
+    }
+    case LV_EVENT_SCREEN_UNLOAD_START:
+    {
+        custom_close_Ctimer();
+        break;
+    }
     case LV_EVENT_GESTURE:
     {
         lv_dir_t dir = lv_indev_get_gesture_dir(lv_indev_get_act());

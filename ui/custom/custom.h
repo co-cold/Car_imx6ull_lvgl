@@ -32,6 +32,13 @@ void stop_dashboard_animation(void);
 
 void setup_meter_arc_image(lv_ui *ui);
 
+void custom_set_Htimer();
+void custom_set_Ctimer();
+void custom_close_Htimer();
+void custom_close_Ctimer();
+void custom_set_Aclock(lv_obj_t *clock);
+void custom_set_Dclock(lv_obj_t *clock);
+
 #ifdef __cplusplus
 }
 #endif

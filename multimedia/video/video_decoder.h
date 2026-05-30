@@ -5,14 +5,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "video_double_buf.h"
-
-#if DEBUG
-#define LOGD(fmt, ...) printf(fmt, ##__VA_ARGS__)
-#define LOGE(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
-#else
-#define LOGD(fmt, ...)
-#define LOGE(fmt, ...)
-#endif
+#include "../utils/debug.h"
 
 /**
  * @brief 视频解码器上下文结构体
@@ -31,6 +24,11 @@ typedef struct {
     volatile int seek_req;                  /**< 跳转请求（暂未实现） */
     double duration;                        /**< 媒体总时长（秒） */
     double fps;                             /**< 视频帧率 */
+    
+    // 内部同步变量，用于线程退出确认
+    pthread_mutex_t exit_lock;              /**< 退出同步锁 */
+    pthread_cond_t exit_cond;               /**< 退出同步条件变量 */
+    volatile int thread_exited;             /**< 线程退出标志 */
 } VideoDecoder;
 
 /**

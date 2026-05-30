@@ -6,18 +6,7 @@
 #include <stdio.h>
 #include "ring_buffer.h"
 
-// 调试宏控制
-#ifndef DEBUG
-#define DEBUG 1
-#endif
 
-#if DEBUG
-#define LOGD(fmt, ...) printf(fmt, ##__VA_ARGS__)
-#define LOGE(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
-#else
-#define LOGD(fmt, ...)
-#define LOGE(fmt, ...)
-#endif
 
 /**
  * @brief 音频解码器上下文结构体
@@ -36,6 +25,11 @@ typedef struct {
     double current_time;                    /**< 当前播放时间（秒） */
     int sample_rate;                        /**< 音频文件原生采样率 */
     int channels;                           /**< 音频文件声道数 */
+    
+    // 内部同步变量，用于线程退出确认
+    pthread_mutex_t exit_lock;              /**< 退出同步锁 */
+    pthread_cond_t exit_cond;               /**< 退出同步条件变量 */
+    volatile int thread_exited;             /**< 线程退出标志 */
 } AudioDecoder;
 
 /**

@@ -1,5 +1,4 @@
 build/
-bin/
 
 CMakeCache.txt
 CMakeFiles/
@@ -16,3 +15,7 @@ cmake_install.cmake
 auto_stress_test*
 lvgl_stress_test*
 *.txt
+
+# Static libraries (编译生成的静态库)
+*.a
+*.so

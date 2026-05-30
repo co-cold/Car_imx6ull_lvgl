@@ -16,7 +16,8 @@ typedef struct {
     pthread_mutex_t lock;       /**< 互斥锁 */
     pthread_cond_t  not_full;   /**< 条件变量：非满（可写） */
     pthread_cond_t  not_empty;  /**< 条件变量：非空（可读） */
-    int        abort_flag;      /**< 用于安全退出：1表示缓冲区已销毁，读写立即返回错误 */
+    volatile int abort_flag;     /**< 用于安全退出：1表示缓冲区已销毁，读写立即返回错误 */
+    volatile int destroy_in_progress;  /**< 标记是否正在销毁 */
 } RingBuffer;
 
 /**

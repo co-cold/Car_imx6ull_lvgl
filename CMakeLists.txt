@@ -24,10 +24,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)# 强制要求使用指定的C++标准，若�
 
 # 指定可执行文件的输出目录为项目根目录下的bin文件夹，这样，我们的编译好对于开发板的可执行文件则会存在当前目录下的bin目录下，
 #${PROJECT_SOURCE_DIR}代表的是CMakeLists.txt所在的路径
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
+#${CMAKE_BINARY_DIR}代表的是当前CMakeLists.txt所在目录的build目录
+set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLV_CONF_INCLUDE_SIMPLE")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${PROJECT_SOURCE_DIR}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNDEBUG=1")
 
 ################## 添加libyuv支持 ###################
 set(LIBYUV_ROOT "/home/coco/arm-libyuv/libyuv" CACHE PATH "Path to libyuv")
@@ -136,4 +138,4 @@ target_link_libraries(lvgl_demo
                         pthread            # 链接线程库（LVGL的多线程功能依赖）
                         libyuv
                         multimedia
-                     ) 
+                     )

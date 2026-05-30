@@ -69,6 +69,8 @@ int test_quick_switch(PlayerCore *pc) {
     
     // 快速切换多次 - 模拟用户快速按键
     for (int i = 0; i < 3; i++) {
+        if (!g_test_running) break;
+        
         printf("[TEST] Quick switch iteration %d\n", i + 1);
         
         // 快速切换到音频
@@ -105,6 +107,8 @@ int test_pause_resume(PlayerCore *pc) {
     
     // 多次暂停/继续
     for (int i = 0; i < 3; i++) {
+        if (!g_test_running) break;
+        
         printf("[TEST] Pause/resume iteration %d\n", i + 1);
         
         player_core_pause(pc);
@@ -150,6 +154,56 @@ int test_video_to_music_exit(PlayerCore *pc) {
     usleep(100000);
     
     printf("[TEST] Video->music->exit test completed\n");
+    return 0;
+}
+
+// 长时间运行测试 - 模拟用户挂机一晚上的场景
+int test_long_running(PlayerCore *pc) {
+    printf("[TEST] Starting long running test (stress test)...\n");
+    
+    time_t start_time = time(NULL);
+    time_t current_time;
+    
+    int cycle = 0;
+    while ((current_time = time(NULL)) - start_time < LONG_TEST_DURATION && g_test_running) {
+        cycle++;
+        printf("[TEST] Long running cycle %d, elapsed: %ld seconds\n", cycle, current_time - start_time);
+        
+        // 随机选择播放类型
+        int choice = rand() % 3;
+        switch (choice) {
+            case 0:
+                if (player_core_play_audio(pc, TEST_AUDIO_FILE) == 0) {
+                    sleep(3);
+                }
+                break;
+            case 1:
+                if (player_core_play_video(pc, TEST_VIDEO_FILE, 800, 450) == 0) {
+                    usleep(100000);
+                    sleep(3);
+                }
+                break;
+            case 2:
+                if (player_core_play_audio(pc, TEST_AUDIO_FILE) == 0) {
+                    usleep(100000);
+                    sleep(1);
+                    player_core_pause(pc);
+                    usleep(200000); // 暂停200ms
+                    player_core_resume(pc);
+                    sleep(2);
+                }
+                break;
+        }
+        
+        player_core_stop(pc);
+        usleep(100000); // 100ms间隔
+        
+        if (cycle % 10 == 0) {
+            printf("[TEST] Completed %d cycles, continuing...\n", cycle);
+        }
+    }
+    
+    printf("[TEST] Long running test completed, cycles: %d\n", cycle);
     return 0;
 }
 
@@ -226,6 +280,8 @@ int test_resource_cleanup() {
     printf("[TEST] Starting resource cleanup test...\n");
     
     for (int i = 0; i < 5; i++) {
+        if (!g_test_running) break;
+        
         PlayerCore *pc = player_core_create();
         if (!pc) {
             printf("[ERROR] Failed to create player core\n");
@@ -240,6 +296,7 @@ int test_resource_cleanup() {
         
         player_core_destroy(pc);
         printf("[TEST] Cleanup iteration %d completed\n", i + 1);
+        usleep(100000); // 100ms间隔
     }
     
     printf("[TEST] Resource cleanup test completed\n");
@@ -252,6 +309,8 @@ int test_continuous_play(PlayerCore *pc) {
     
     // 连续播放同一个文件多次
     for (int i = 0; i < 5; i++) {
+        if (!g_test_running) break;
+        
         printf("[TEST] Continuous play iteration %d\n", i + 1);
         
         if (player_core_play_audio(pc, TEST_AUDIO_FILE) != 0) {
@@ -275,12 +334,14 @@ void *concurrent_test_thread(void *arg) {
     
     printf("[TEST] Thread %d started\n", thread_id);
     
-    while (g_test_running) {
+    int count = 0;
+    while (g_test_running && count < 10) {
         if (player_core_play_audio(pc, TEST_AUDIO_FILE) == 0) {
             sleep(1);
             player_core_stop(pc);
         }
-        usleep(500000);
+        usleep(100000); // 100ms间隔
+        count++;
     }
     
     printf("[TEST] Thread %d exited\n", thread_id);
@@ -296,27 +357,27 @@ int test_concurrent_operations() {
         return -1;
     }
     
-    g_test_running = 1;
     pthread_t threads[3];
     int thread_ids[3] = {1, 2, 3};
     
     for (int i = 0; i < 3; i++) {
-        pthread_create(&threads[i], NULL, concurrent_test_thread, &thread_ids[i]);
+        if (pthread_create(&threads[i], NULL, concurrent_test_thread, &thread_ids[i]) != 0) {
+            printf("[ERROR] Failed to create thread %d\n", i);
+            player_core_destroy(pc);
+            return -1;
+        }
     }
     
-    sleep(5);
-    g_test_running = 0;
-    
+    // 等待线程完成或测试时间结束
     for (int i = 0; i < 3; i++) {
         struct timespec timeout;
         clock_gettime(CLOCK_REALTIME, &timeout);
-        timeout.tv_sec += 5; // 5秒超时
+        timeout.tv_sec += 15; // 15秒超时
         
         int ret = pthread_timedjoin_np(threads[i], NULL, &timeout);
         if (ret == ETIMEDOUT) {
             printf("Test thread %d join timeout, force cancel\n", i);
-            pthread_cancel(threads[i]);
-            pthread_join(threads[i], NULL);
+            // 注意：这里不使用pthread_cancel，因为可能导致资源泄露
         }
     }
     
@@ -325,19 +386,103 @@ int test_concurrent_operations() {
     return 0;
 }
 
+// 测试快速停止/启动（最可能导致崩溃的场景）
+int test_rapid_start_stop(PlayerCore *pc) {
+    printf("[TEST] Starting rapid start/stop test...\n");
+    
+    for (int i = 0; i < 10; i++) {
+        if (!g_test_running) break;
+        
+        printf("[TEST] Rapid start/stop iteration %d\n", i + 1);
+        
+        // 快速启动
+        if (player_core_play_audio(pc, TEST_AUDIO_FILE) == 0) {
+            usleep(50000); // 仅50ms后就停止
+        }
+        
+        // 快速停止
+        player_core_stop(pc);
+        usleep(50000); // 50ms间隔
+    }
+    
+    printf("[TEST] Rapid start/stop test completed\n");
+    return 0;
+}
+
+// 测试混合操作序列
+int test_mixed_operations(PlayerCore *pc) {
+    printf("[TEST] Starting mixed operations test...\n");
+    
+    // 混合各种操作
+    int operations[] = {0, 1, 2, 0, 3, 1, 4, 2, 0}; // 0=audio, 1=video, 2=switch, 3=pause/resume, 4=quick_switch
+    int num_ops = sizeof(operations) / sizeof(operations[0]);
+    
+    for (int i = 0; i < num_ops; i++) {
+        if (!g_test_running) break;
+        
+        printf("[TEST] Mixed operation %d: ", i + 1);
+        switch (operations[i]) {
+            case 0:
+                printf("audio play\n");
+                player_core_play_audio(pc, TEST_AUDIO_FILE);
+                sleep(1);
+                break;
+            case 1:
+                printf("video play\n");
+                player_core_play_video(pc, TEST_VIDEO_FILE, 800, 450);
+                usleep(100000);
+                sleep(1);
+                break;
+            case 2:
+                printf("mode switch\n");
+                player_core_play_audio(pc, TEST_AUDIO_FILE);
+                sleep(1);
+                player_core_play_video(pc, TEST_VIDEO_FILE, 800, 450);
+                usleep(100000);
+                sleep(1);
+                break;
+            case 3:
+                printf("pause/resume\n");
+                player_core_play_audio(pc, TEST_AUDIO_FILE);
+                sleep(1);
+                player_core_pause(pc);
+                usleep(100000);
+                player_core_resume(pc);
+                sleep(1);
+                break;
+            case 4:
+                printf("quick switch\n");
+                player_core_play_audio(pc, TEST_AUDIO_FILE);
+                usleep(200000);
+                player_core_play_video(pc, TEST_VIDEO_FILE, 800, 450);
+                usleep(200000);
+                break;
+        }
+        
+        player_core_stop(pc);
+        usleep(100000);
+    }
+    
+    printf("[TEST] Mixed operations test completed\n");
+    return 0;
+}
+
 int main(int argc, char *argv[]) {
+    // 注册信号处理器
+    signal(SIGINT, signal_handler);
+    signal(SIGTERM, signal_handler);
+    
     printf("=========================================\n");
-    printf("Multimedia Module Stress Test\n");
-    printf("=========================================\n");
-    printf("Test scenarios simulating real custom_media interaction\n");
+    printf("Enhanced Multimedia Module Stress Test\n");
+    printf("Extended test suite for crash detection\n");
     printf("=========================================\n");
     
     int failed_tests = 0;
     int total_tests = 0;
     
     // 运行多个测试循环
-    for (int loop = 0; loop < TEST_LOOPS; loop++) {
-        printf("\n--- Test Loop %d/%d ---\n", loop + 1, TEST_LOOPS);
+    for (int loop = 0; loop < TEST_LOOPS && g_test_running; loop++) {
+        printf("\n--- Enhanced Test Loop %d/%d ---\n", loop + 1, TEST_LOOPS);
         
         // 创建播放器核心
         PlayerCore *pc = player_core_create();
@@ -406,166 +551,73 @@ int main(int argc, char *argv[]) {
             printf(" [PASSED]\n");
         }
         
+        // 测试7: 快速启动/停止（最危险的操作）
+        total_tests++;
+        printf("--- Test 7: Rapid Start/Stop ---");
+        if (test_rapid_start_stop(pc) != 0) {
+            failed_tests++;
+            printf(" [FAILED]\n");
+        } else {
+            printf(" [PASSED]\n");
+        }
+        
+        // 测试8: 混合操作
+        total_tests++;
+        printf("--- Test 8: Mixed Operations ---");
+        if (test_mixed_operations(pc) != 0) {
+            failed_tests++;
+            printf(" [FAILED]\n");
+        } else {
+            printf(" [PASSED]\n");
+        }
+        
         // 销毁播放器核心
         player_core_destroy(pc);
         
-        printf("--- Loop %d completed ---", loop + 1);
-        printf(" (%d/%d passed)\n", total_tests - failed_tests, total_tests);
-    }
-    
-    // 测试7: 资源释放（单独测试）
-    total_tests++;
-    printf("\n--- Test 7: Resource Cleanup ---");
-    if (test_resource_cleanup() != 0) {
-        failed_tests++;
-        printf(" [FAILED]\n");
-    } else {
-        printf(" [PASSED]\n");
+        printf("--- Loop %d completed --- (%d/%d passed)\n", loop + 1, total_tests - failed_tests, total_tests);
     }
     
     // 长时间运行测试（单独进行）
-    total_tests++;
-    printf("\n--- Test 8: Long Running Stress Test ---");
-    
-    PlayerCore *pc_long = player_core_create();
-    if (!pc_long) {
-        printf("[ERROR] Failed to create player core for long test\n");
-        failed_tests++;
-    } else {
-        printf("[TEST] Starting long running test (stress test)...\n");
+    if (g_test_running) {
+        total_tests++;
+        printf("\n--- Test 9: Long Running Stress Test ---");
         
-        time_t start_time = time(NULL);
-        time_t current_time;
-        
-        int cycle = 0;
-        while ((current_time = time(NULL)) - start_time < 30 && g_test_running) { // 30秒测试
-            cycle++;
-            printf("[TEST] Long running cycle %d, elapsed: %ld seconds\n", cycle, current_time - start_time);
-            
-            // 随机选择播放类型
-            int choice = rand() % 2;
-            switch (choice) {
-                case 0:
-                    if (player_core_play_audio(pc_long, TEST_AUDIO_FILE) == 0) {
-                        sleep(1);
-                    }
-                    break;
-                case 1:
-                    if (player_core_play_video(pc_long, TEST_VIDEO_FILE, 800, 450) == 0) {
-                        usleep(100000);
-                        sleep(1);
-                    }
-                    break;
-            }
-            
-            player_core_stop(pc_long);
-            usleep(100000); // 100ms间隔
-            
-            if (cycle % 5 == 0) {
-                printf("[TEST] Completed %d cycles, continuing...\n", cycle);
-            }
-        }
-        
-        player_core_destroy(pc_long);
-        printf("[TEST] Long running test completed, cycles: %d\n", cycle);
-    }
-    
-    // 测试8: 快速启动/停止（最可能导致崩溃的场景）
-    total_tests++;
-    printf("\n--- Test 9: Rapid Start/Stop ---");
-    
-    PlayerCore *pc_rapid = player_core_create();
-    if (!pc_rapid) {
-        printf("[ERROR] Failed to create player core for rapid test\n");
-        failed_tests++;
-    } else {
-        int rapid_ok = 1;
-        for (int i = 0; i < 10; i++) {
-            if (!g_test_running) break;
-            
-            printf("[TEST] Rapid start/stop iteration %d\n", i + 1);
-            
-            // 快速启动
-            if (player_core_play_audio(pc_rapid, TEST_AUDIO_FILE) == 0) {
-                usleep(50000); // 仅50ms后就停止
-            }
-            
-            // 快速停止
-            player_core_stop(pc_rapid);
-            usleep(50000); // 50ms间隔
-        }
-        
-        player_core_destroy(pc_rapid);
-        if (rapid_ok) {
-            printf(" [PASSED]\n");
-        } else {
-            printf(" [FAILED]\n");
+        PlayerCore *pc = player_core_create();
+        if (!pc) {
+            printf("[ERROR] Failed to create player core for long test\n");
             failed_tests++;
+        } else {
+            if (test_long_running(pc) != 0) {
+                failed_tests++;
+                printf(" [FAILED]\n");
+            } else {
+                printf(" [PASSED]\n");
+            }
+            player_core_destroy(pc);
         }
     }
     
-    // 测试9: 混合操作序列
-    total_tests++;
-    printf("\n--- Test 10: Mixed Operations ---");
-    
-    PlayerCore *pc_mixed = player_core_create();
-    if (!pc_mixed) {
-        printf("[ERROR] Failed to create player core for mixed test\n");
-        failed_tests++;
-    } else {
-        // 混合各种操作
-        int operations[] = {0, 1, 2, 0, 3, 1, 0}; // 0=audio, 1=video, 2=switch, 3=pause/resume
-        int num_ops = sizeof(operations) / sizeof(operations[0]);
-        
-        int mixed_ok = 1;
-        for (int i = 0; i < num_ops; i++) {
-            if (!g_test_running) {
-                mixed_ok = 0;
-                break;
-            }
-            
-            printf("[TEST] Mixed operation %d: ", i + 1);
-            switch (operations[i]) {
-                case 0:
-                    printf("audio play\n");
-                    player_core_play_audio(pc_mixed, TEST_AUDIO_FILE);
-                    sleep(1);
-                    break;
-                case 1:
-                    printf("video play\n");
-                    player_core_play_video(pc_mixed, TEST_VIDEO_FILE, 800, 450);
-                    usleep(100000);
-                    sleep(1);
-                    break;
-                case 2:
-                    printf("mode switch\n");
-                    player_core_play_audio(pc_mixed, TEST_AUDIO_FILE);
-                    sleep(1);
-                    player_core_play_video(pc_mixed, TEST_VIDEO_FILE, 800, 450);
-                    usleep(100000);
-                    sleep(1);
-                    break;
-                case 3:
-                    printf("pause/resume\n");
-                    player_core_play_audio(pc_mixed, TEST_AUDIO_FILE);
-                    sleep(1);
-                    player_core_pause(pc_mixed);
-                    usleep(100000);
-                    player_core_resume(pc_mixed);
-                    sleep(1);
-                    break;
-            }
-            
-            player_core_stop(pc_mixed);
-            usleep(100000);
-        }
-        
-        player_core_destroy(pc_mixed);
-        if (mixed_ok) {
-            printf(" [PASSED]\n");
-        } else {
-            printf(" [FAILED]\n");
+    // 资源释放测试（单独测试）
+    if (g_test_running) {
+        total_tests++;
+        printf("\n--- Test 10: Resource Cleanup ---");
+        if (test_resource_cleanup() != 0) {
             failed_tests++;
+            printf(" [FAILED]\n");
+        } else {
+            printf(" [PASSED]\n");
+        }
+    }
+    
+    // 并发操作测试（单独测试）
+    if (g_test_running) {
+        total_tests++;
+        printf("\n--- Test 11: Concurrent Operations ---");
+        if (test_concurrent_operations() != 0) {
+            failed_tests++;
+            printf(" [FAILED]\n");
+        } else {
+            printf(" [PASSED]\n");
         }
     }
     

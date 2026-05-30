@@ -1,7 +1,12 @@
+#define _GNU_SOURCE
 #include "video_decoder.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+#include <pthread.h>
+#include <time.h>
+#include "../utils/debug.h"
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
 #include <libswscale/swscale.h>
@@ -10,11 +15,11 @@
 
 static void* vd_thread_fn(void *arg) {
     VideoDecoder *vd = (VideoDecoder*)arg;
-    printf("video_decoder: thread started for %s\n", vd->file_path);
+    LOGD("video_decoder: thread started for %s\n", vd->file_path);
     AVPacket *pkt = av_packet_alloc();
     AVFrame *frame = av_frame_alloc();
     if (!pkt || !frame) {
-        printf("video_decoder: thread exiting - alloc failed\n");
+        LOGD("video_decoder: thread exiting - alloc failed\n");
         return NULL;
     }
 
@@ -79,9 +84,15 @@ static void* vd_thread_fn(void *arg) {
             }
             
             // 跳帧：如果上一帧UI还没取走，直接丢弃
-            uint8_t *dst = vdb_get_write_buf(vd->vdb);
+            VideoDoubleBuf *vdb_copy = vd->vdb;  // 获取视频双缓冲区指针的本地副本
+            if (!vdb_copy) {
+                LOGD("video_decoder: vdb已释放，退出线程\n");
+                av_frame_unref(frame);
+                break;
+            }
+            uint8_t *dst = vdb_get_write_buf(vdb_copy);
             if (!dst) {
-                printf("video_decoder: buffer full, dropping frame\n");
+                LOGD("video_decoder: buffer full, dropping frame\n");
                 av_frame_unref(frame);
                 continue;
             }
@@ -89,7 +100,7 @@ static void* vd_thread_fn(void *arg) {
             // 打印渲染信息（每300帧，减少输出频率）
             render_count++;
             if (render_count % 300 == 0) {
-                printf("video_decoder: rendered %d frames\n", render_count);
+                LOGD("video_decoder: rendered %d frames\n", render_count);
             }
 
             // 缩放并转换为RGB565格式
@@ -101,7 +112,7 @@ static void* vd_thread_fn(void *arg) {
                       dest, dst_linesize);
 
             // 提交帧到双缓冲
-            vdb_commit(vd->vdb);
+            vdb_commit(vdb_copy);
             av_frame_unref(frame);
         }
         av_packet_unref(pkt);
@@ -109,7 +120,14 @@ static void* vd_thread_fn(void *arg) {
 
     av_frame_free(&frame);
     av_packet_free(&pkt);
-    printf("video_decoder: thread exiting for %s\n", vd->file_path);
+    
+    // 设置线程退出标志并发出通知
+    pthread_mutex_lock(&vd->exit_lock);
+    vd->thread_exited = 1;
+    pthread_cond_broadcast(&vd->exit_cond);
+    pthread_mutex_unlock(&vd->exit_lock);
+    
+    LOGD("video_decoder: thread exiting for %s\n", vd->file_path);
     return NULL;
 }
 
@@ -118,30 +136,30 @@ static int is_codec_supported(AVCodecParameters *par) {
     switch (par->codec_id) {
         case AV_CODEC_ID_H264: {
             if (par->profile == 66 || par->profile == 77) {
-                printf("video_decoder: H.264 %s Profile supported\n", 
-                       par->profile == 66 ? "Baseline" : "Main");
+                LOGD("video_decoder: H.264 %s Profile supported\n", 
+                     par->profile == 66 ? "Baseline" : "Main");
                 return 1;
             } else {
-                fprintf(stderr, "video_decoder: H.264 High Profile not supported on i.MX6ULL\n");
+                LOGE("video_decoder: H.264 High Profile not supported on i.MX6ULL\n");
                 return 0;
             }
         }
         case AV_CODEC_ID_MPEG4: {
             if (par->profile <= 1) {
-                printf("video_decoder: MPEG-4 Simple Profile supported\n");
+                LOGD("video_decoder: MPEG-4 Simple Profile supported\n");
                 return 1;
             } else {
-                fprintf(stderr, "video_decoder: MPEG-4 profile %d not supported on i.MX6ULL\n", par->profile);
+                LOGE("video_decoder: MPEG-4 profile %d not supported on i.MX6ULL\n", par->profile);
                 return 0;
             }
         }
         case AV_CODEC_ID_H263:
         case AV_CODEC_ID_MJPEG:
-            printf("video_decoder: %s supported\n", 
-                   par->codec_id == AV_CODEC_ID_H263 ? "H.263" : "MJPEG");
+            LOGD("video_decoder: %s supported\n", 
+                 avcodec_get_name(par->codec_id));
             return 1;
         default:
-            fprintf(stderr, "video_decoder: codec %d not supported on i.MX6ULL\n", par->codec_id);
+            LOGE("video_decoder: codec %d not supported on i.MX6ULL\n", par->codec_id);
             return 0;
     }
 }
@@ -152,13 +170,13 @@ static int is_resolution_supported(int width, int height, double fps) {
     const double MAX_FPS = 30.0;
     
     if (width > MAX_WIDTH || height > MAX_HEIGHT) {
-        fprintf(stderr, "video_decoder: resolution %dx%d exceeds i.MX6ULL limit (%dx%d)\n",
-                width, height, MAX_WIDTH, MAX_HEIGHT);
+        LOGE("video_decoder: resolution %dx%d exceeds i.MX6ULL limit (%dx%d)\n",
+             width, height, MAX_WIDTH, MAX_HEIGHT);
         return 0;
     }
     
     if (fps > MAX_FPS) {
-        fprintf(stderr, "video_decoder: fps %.2f exceeds i.MX6ULL limit (%.0ffps)\n", fps, MAX_FPS);
+        LOGE("video_decoder: fps %.2f exceeds i.MX6ULL limit (%.0ffps)\n", fps, MAX_FPS);
         return 0;
     }
     
@@ -175,10 +193,10 @@ VideoDecoder* video_decoder_init(const char *file_path, VideoDoubleBuf *vdb,
     vd->dst_width = dst_width;
     vd->dst_height = dst_height;
 
-    printf("video_decoder: opening %s\n", file_path);
+    LOGD("video_decoder: opening %s\n", file_path);
     
     if (avformat_open_input(&vd->fmt_ctx, file_path, NULL, NULL) < 0) {
-        fprintf(stderr, "video_decoder: cannot open input\n");
+        LOGE("video_decoder: cannot open input\n");
         goto fail;
     }
     if (avformat_find_stream_info(vd->fmt_ctx, NULL) < 0) {
@@ -227,6 +245,11 @@ VideoDecoder* video_decoder_init(const char *file_path, VideoDoubleBuf *vdb,
                                  SWS_FAST_BILINEAR, NULL, NULL, NULL);
     if (!vd->sws_ctx) goto fail;
 
+    // 初始化线程退出同步机制
+    pthread_mutex_init(&vd->exit_lock, NULL);
+    pthread_cond_init(&vd->exit_cond, NULL);
+    vd->thread_exited = 0;
+
     // 获取帧率
     vd->fps = fps;
 
@@ -245,13 +268,38 @@ void video_decoder_start(VideoDecoder *vd) {
     if (pthread_create(&vd->thread, NULL, vd_thread_fn, vd) != 0) {
         fprintf(stderr, "video_decoder: pthread_create failed\n");
         vd->running = 0;
+        // 设置线程已退出标志，因为线程创建失败，实际上并没有运行
+        pthread_mutex_lock(&vd->exit_lock);
+        vd->thread_exited = 1;
+        pthread_cond_broadcast(&vd->exit_cond);
+        pthread_mutex_unlock(&vd->exit_lock);
     }
 }
 
 void video_decoder_stop(VideoDecoder *vd) {
     if (!vd || !vd->running) return;
     vd->running = 0;
-    pthread_join(vd->thread, NULL);
+    
+    // 使用通知机制等待线程结束，替代超时等待
+    LOGD("video_decoder_stop: 等待视频解码线程退出确认\n");
+    
+    // 加锁检查线程是否已经退出
+    pthread_mutex_lock(&vd->exit_lock);
+    if (!vd->thread_exited) {
+        // 等待线程发出退出通知，设置一个较短的超时时间作为后备
+        struct timespec timeout;
+        clock_gettime(CLOCK_REALTIME, &timeout);
+        timeout.tv_sec += 2; // 2秒超时作为绝对上限
+        
+        int ret = pthread_cond_timedwait(&vd->exit_cond, &vd->exit_lock, &timeout);
+        if (ret == ETIMEDOUT) {
+            LOGD("video_decoder: 线程退出等待超时\n");
+            // 即使超时，也继续执行清理，因为可能线程已退出但未正确设置标志
+        }
+    }
+    pthread_mutex_unlock(&vd->exit_lock);
+    
+    LOGD("video_decoder_stop: 视频解码线程已确认退出\n");
 }
 
 void video_decoder_seek(VideoDecoder *vd, double seconds) {
@@ -276,5 +324,10 @@ void video_decoder_free(VideoDecoder *vd) {
     if (vd->codec_ctx) avcodec_free_context(&vd->codec_ctx);
     if (vd->fmt_ctx) avformat_close_input(&vd->fmt_ctx);
     if (vd->file_path) free(vd->file_path);
+    
+    // 销毁线程退出同步机制
+    pthread_mutex_destroy(&vd->exit_lock);
+    pthread_cond_destroy(&vd->exit_cond);
+    
     free(vd);
 }

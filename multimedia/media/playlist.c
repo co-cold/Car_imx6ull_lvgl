@@ -5,9 +5,7 @@
 #include <dirent.h>
 #include "playlist.h"
 #include "media_metadata.h"
-
-#define LOGD(fmt, ...) printf("[playlist] " fmt, ##__VA_ARGS__)
-#define LOGE(fmt, ...) printf("[playlist ERROR] " fmt, ##__VA_ARGS__)
+#include "../utils/debug.h"
 
 // 支持的音频格式
 static const char *audio_extensions[] = {".mp3", ".flac", ".wav", ".ogg", ".m4a", NULL};

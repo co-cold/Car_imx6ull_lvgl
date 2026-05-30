@@ -6,18 +6,7 @@
 #include <stdio.h>
 #include "ring_buffer.h"   // 来自 multimedia/utils
 
-// 调试宏控制
-#ifndef DEBUG
-#define DEBUG 1
-#endif
 
-#if DEBUG
-#define LOGD(fmt, ...) printf(fmt, ##__VA_ARGS__)
-#define LOGE(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
-#else
-#define LOGD(fmt, ...)
-#define LOGE(fmt, ...)
-#endif
 
 typedef struct {
     snd_pcm_t *handle;          // ALSA PCM句柄
@@ -38,6 +27,11 @@ typedef struct {
     pthread_t thread;           // 播放线程ID
     
     float volume;               // 音量大小（0.0 - 2.0，1.0为原始音量）
+    
+    // 内部同步变量，用于线程退出确认
+    pthread_mutex_t exit_lock;  // 退出同步锁
+    pthread_cond_t exit_cond;   // 退出同步条件变量
+    volatile int thread_exited; // 线程退出标志
 } AudioOutput;
 
 /**

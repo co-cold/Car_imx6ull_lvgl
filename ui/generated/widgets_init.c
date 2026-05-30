@@ -77,53 +77,55 @@ void clock_count(int *hour, int *min, int *sec)
 }
 #endif
 
+/* 有bug弃用 guider_ui的成员会成为悬空指针，全局定时器会导致程序崩溃 */
 
-extern int screen_home_digital_clock_status_hour_value;
-extern int screen_home_digital_clock_status_min_value;
-extern int screen_home_digital_clock_status_sec_value;
 /* 全局时钟定时器 */
-void screen_home_digital_clock_status_timer(lv_timer_t *timer)
-{
-    time_t now = time(NULL);
-    struct tm *timeinfo = localtime(&now);
-    
-    // 更新全局变量（可选，如果其他地方需要）
-    screen_home_digital_clock_status_hour_value = timeinfo->tm_hour;
-    screen_home_digital_clock_status_min_value = timeinfo->tm_min;
-    screen_home_digital_clock_status_sec_value = timeinfo->tm_sec;
-    
-    if (lv_obj_is_valid(guider_ui.screen_home_digital_clock_status))
-    {
-        // 24小时制
-        lv_dclock_set_text_fmt(guider_ui.screen_home_digital_clock_status, 
-                              "%02d:%02d:%02d", 
-                              timeinfo->tm_hour, 
-                              timeinfo->tm_min, 
-                              timeinfo->tm_sec);
-    }
+// void screen_home_digital_clock_status_timer(lv_timer_t *timer) 
+// { 
+//     time_t now = time(NULL); 
+//     struct tm *timeinfo = localtime(&now); 
+     
+//     if (lv_obj_is_valid(guider_ui.screen_home_digital_clock_status)) 
+//     { 
+//         // 24小时制 
+//         lv_dclock_set_text_fmt(guider_ui.screen_home_digital_clock_status,
+//                               "%02d:%02d:%02d", 
+//                               timeinfo->tm_hour, 
+//                               timeinfo->tm_min, 
+//                               timeinfo->tm_sec); 
+//     } 
+// } 
 
-    if (lv_obj_is_valid(guider_ui.screen_clock_digital_clock_1))
-    {
-        // 24小时制
-        lv_dclock_set_text_fmt(guider_ui.screen_clock_digital_clock_1, 
-                              "%02d:%02d:%02d", 
-                              timeinfo->tm_hour, 
-                              timeinfo->tm_min, 
-                              timeinfo->tm_sec);
-    }
+// void screen_clock_analog_clock_1_timer(lv_timer_t *timer)
+// {
+//     time_t now = time(NULL); 
+//     struct tm *timeinfo = localtime(&now); 
 
-    if (lv_obj_is_valid(guider_ui.screen_clock_analog_clock_1))
-    {
-        int32_t hour_12 = timeinfo->tm_hour % 12;  // 直接使用 0-11 的小时值
-    
-        // 12小时制
-        lv_analogclock_set_time(guider_ui.screen_clock_analog_clock_1, 
-            hour_12,
-            timeinfo->tm_min,
-            timeinfo->tm_sec);
+//     int32_t hour_12 = timeinfo->tm_hour % 12;  // 直接使用 0-11 的小时值 
+//     if (lv_obj_is_valid(guider_ui.screen_clock_analog_clock_1))
+//     {
+//         lv_analogclock_set_time(guider_ui.screen_clock_analog_clock_1, 
+//                                 hour_12, 
+//                                 timeinfo->tm_min, 
+//                                 timeinfo->tm_sec); 
+//     }
+// }
 
-    }
-}
+// void screen_clock_digital_clock_1_timer(lv_timer_t *timer)
+// {
+//     time_t now = time(NULL); 
+//     struct tm *timeinfo = localtime(&now); 
+     
+//     if (lv_obj_is_valid(guider_ui.screen_clock_digital_clock_1)) 
+//     { 
+//         // 24小时制 
+//         lv_dclock_set_text_fmt(guider_ui.screen_clock_digital_clock_1,
+//                               "%02d:%02d:%02d", 
+//                               timeinfo->tm_hour, 
+//                               timeinfo->tm_min, 
+//                               timeinfo->tm_sec); 
+//     } 
+// }
 
 // //Write codes screen_home_digital_clock_status
 // static bool screen_home_digital_clock_status_timer_enabled = false;
@@ -147,34 +149,25 @@ void screen_home_digital_clock_status_timer(lv_timer_t *timer)
 //     screen_home_digital_clock_status_timer_enabled = true;
 // }
 
-// int32_t hour_12 = screen_home_digital_clock_status_hour_value % 12;  // 直接使用 0-11 的小时值
+// // 获取当前系统时间
+// time_t now = time(NULL);
+// struct tm *timeinfo = localtime(&now);
+// int32_t hour_12 = timeinfo->tm_hour % 12; 
 // lv_analogclock_set_time(ui->screen_clock_analog_clock_1, 
-// hour_12, 
-// screen_home_digital_clock_status_min_value,
-// screen_home_digital_clock_status_sec_value);
-// // create timer
-// if (!screen_clock_analog_clock_1_timer_enabled) {
-//     // lv_timer_create(screen_clock_analog_clock_1_timer, 1000, NULL);
-//     screen_clock_analog_clock_1_timer_enabled = true;
-// }
-// lv_obj_set_style_radius(ui->screen_clock_analog_clock_1, LV_RADIUS_CIRCLE, LV_PART_MAIN|LV_STATE_DEFAULT);
-// static lv_style_t screen_clock_analog_clock_1_style;
-// lv_style_init(&screen_clock_analog_clock_1_style);           //初始化样式
-// lv_style_set_pad_top(&screen_clock_analog_clock_1_style, 5);
-// lv_style_set_pad_left(&screen_clock_analog_clock_1_style, 5);
-// lv_style_set_pad_right(&screen_clock_analog_clock_1_style, 5);
-// lv_style_set_pad_bottom(&screen_clock_analog_clock_1_style, 5);
-// lv_obj_add_style(ui->screen_clock_analog_clock_1, &screen_clock_analog_clock_1_style, LV_PART_MAIN);
+//                         hour_12, 
+//                         timeinfo->tm_min,
+//                         timeinfo->tm_sec);
 
 // //Write codes screen_clock_digital_clock_1
 // static bool screen_clock_digital_clock_1_timer_enabled = false;
+// // 获取当前系统时间
+// now = time(NULL);
+// timeinfo = localtime(&now);
 // char time_str[20];
 // snprintf(time_str, sizeof(time_str), "%02d:%02d:%02d", 
-//             screen_home_digital_clock_status_hour_value, 
-//             screen_home_digital_clock_status_min_value, 
-//             screen_home_digital_clock_status_sec_value);
+//             timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
 // ui->screen_clock_digital_clock_1 = lv_dclock_create(ui->screen_clock_cont_clock, time_str);
 // if (!screen_clock_digital_clock_1_timer_enabled) {
-//     // lv_timer_create(screen_clock_digital_clock_1_timer, 1000, NULL);
+//     lv_timer_create(screen_clock_digital_clock_1_timer, 1000, NULL);
 //     screen_clock_digital_clock_1_timer_enabled = true;
 // }

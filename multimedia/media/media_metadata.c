@@ -5,10 +5,8 @@
 #include <libgen.h>
 #include "libavformat/avformat.h"
 #include "libavcodec/avcodec.h"
+#include "../utils/debug.h"
 
-// 调试宏控制
-#ifndef DEBUG
-#define DEBUG 1
 char* media_metadata_format_duration_short(int64_t duration_ms, char *buf, size_t buf_size) {
     if (!buf || buf_size == 0) return NULL;
     
@@ -23,16 +21,6 @@ char* media_metadata_format_duration_short(int64_t duration_ms, char *buf, size_
     }
     return buf;
 }
-
-#endif
-
-#if DEBUG
-#define LOGD(fmt, ...) printf(fmt, ##__VA_ARGS__)
-#define LOGE(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
-#else
-#define LOGD(fmt, ...)
-#define LOGE(fmt, ...)
-#endif
 
 int media_metadata_parse(const char *file_path, MediaMetadata *info) {
     if (!file_path || !info) return -1;

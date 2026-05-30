@@ -16,9 +16,8 @@
 
 
 
-extern int screen_home_digital_clock_status_hour_value;
-extern int screen_home_digital_clock_status_min_value;
-extern int screen_home_digital_clock_status_sec_value;
+
+
 void setup_scr_screen_clock(lv_ui *ui)
 {
     //Write codes screen_clock
@@ -56,11 +55,8 @@ void setup_scr_screen_clock(lv_ui *ui)
     lv_analogclock_set_hour_needle_line(ui->screen_clock_analog_clock_1, 5, lv_color_hex(0x000000), -50);
     lv_analogclock_set_min_needle_line(ui->screen_clock_analog_clock_1, 4, lv_color_hex(0x000000), -30);
     lv_analogclock_set_sec_needle_line(ui->screen_clock_analog_clock_1, 3, lv_color_hex(0x000000), -10);
-    int32_t hour_12 = screen_home_digital_clock_status_hour_value % 12; 
-    lv_analogclock_set_time(ui->screen_clock_analog_clock_1, 
-        hour_12, 
-        screen_home_digital_clock_status_min_value,
-        screen_home_digital_clock_status_sec_value);
+
+    /* 修复样式 */
     lv_obj_set_style_radius(ui->screen_clock_analog_clock_1, LV_RADIUS_CIRCLE, LV_PART_MAIN|LV_STATE_DEFAULT);
     static lv_style_t screen_clock_analog_clock_1_style;
     lv_style_init(&screen_clock_analog_clock_1_style);           //初始化样式
@@ -68,8 +64,16 @@ void setup_scr_screen_clock(lv_ui *ui)
     lv_style_set_pad_left(&screen_clock_analog_clock_1_style, 5);
     lv_style_set_pad_right(&screen_clock_analog_clock_1_style, 5);
     lv_style_set_pad_bottom(&screen_clock_analog_clock_1_style, 5);
-
     lv_obj_add_style(ui->screen_clock_analog_clock_1, &screen_clock_analog_clock_1_style, LV_PART_MAIN);
+    
+    // 获取当前系统时间
+    time_t now = time(NULL);
+    struct tm *timeinfo = localtime(&now);
+    int32_t hour_12 = timeinfo->tm_hour % 12;  // 直接使用 0-11 的小时值 
+    lv_analogclock_set_time(guider_ui.screen_clock_analog_clock_1, 
+                        hour_12, 
+                        timeinfo->tm_min, 
+                        timeinfo->tm_sec); 
     // create timer
     if (!screen_clock_analog_clock_1_timer_enabled) {
         // lv_timer_create(screen_clock_analog_clock_1_timer, 1000, NULL);
@@ -100,11 +104,14 @@ void setup_scr_screen_clock(lv_ui *ui)
 
     //Write codes screen_clock_digital_clock_1
     static bool screen_clock_digital_clock_1_timer_enabled = false;
+    // 获取当前系统时间
+    now = time(NULL);
+    timeinfo = localtime(&now);
     char time_str[20];
     snprintf(time_str, sizeof(time_str), "%02d:%02d:%02d", 
-                screen_home_digital_clock_status_hour_value, 
-                screen_home_digital_clock_status_min_value, 
-                screen_home_digital_clock_status_sec_value);
+                timeinfo->tm_hour, 
+                timeinfo->tm_min, 
+                timeinfo->tm_sec);
     ui->screen_clock_digital_clock_1 = lv_dclock_create(ui->screen_clock_cont_clock, time_str);
     if (!screen_clock_digital_clock_1_timer_enabled) {
         // lv_timer_create(screen_clock_digital_clock_1_timer, 1000, NULL);

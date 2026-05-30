@@ -15,6 +15,7 @@ extern "C" {
 
 #include "lvgl.h"
 #include "gui_guider.h"
+#define LV_USE_ANALOGCLOCK  1 
 
 __attribute__((unused)) void kb_event_cb(lv_event_t *e);
 __attribute__((unused)) void ta_event_cb(lv_event_t *e);
@@ -23,7 +24,9 @@ void clock_count(int *hour, int *min, int *sec);
 #endif
 
 
-void screen_home_digital_clock_status_timer(lv_timer_t *timer);
+// void screen_home_digital_clock_status_timer(lv_timer_t *timer);
+// void screen_clock_analog_clock_1_timer(lv_timer_t *timer);
+// void screen_clock_digital_clock_1_timer(lv_timer_t *timer);
 
 #ifdef __cplusplus
 }

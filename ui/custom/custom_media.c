@@ -38,6 +38,13 @@ typedef struct {
     double lyrics_time[MAX_LYRICS_LINES];
     int lyrics_count;
     int current_lyric_idx;
+    
+    // 播放完成检测
+    bool playback_just_finished;          // 标记播放是否刚完成
+    double last_pos;                      // 上一次记录的位置
+    
+    // 状态标志
+    volatile bool is_deinitializing;      // 标记是否正在进行反初始化
 } MediaContext;
 
 // 全局媒体上下文
@@ -286,6 +293,13 @@ void custom_media_init(lv_ui *ui) {
         LOGD("custom_media_init: 创建进度更新定时器\n");
     }
     
+    // 初始化播放完成检测相关字段
+    ctx->playback_just_finished = false;
+    ctx->last_pos = 0.0;
+    
+    // 初始化状态标志
+    ctx->is_deinitializing = false;
+    
     LOGD("custom_media_init: 初始化完成\n");
 }
 
@@ -498,6 +512,11 @@ static void progress_update_callback(lv_timer_t *timer) {
     MediaContext *ctx = get_context();
     if (!ctx->ui || !ctx->pc) return;
     
+    // 防止在反初始化过程中更新UI
+    if (ctx->is_deinitializing) {
+        return;
+    }
+    
     int state = custom_media_get_state();
     if (state != 1) return;  // 只在播放时更新
     
@@ -505,25 +524,61 @@ static void progress_update_callback(lv_timer_t *timer) {
     double pos = custom_media_get_position();
     char pos_str[16];
     custom_media_format_duration((int64_t)(pos * 1000), pos_str, sizeof(pos_str));
-    lv_label_set_text(ctx->ui->screen_music_label_progressTime, pos_str);
     
+    // 在访问UI元素前再次检查，防止竞态条件
+    if (ctx->ui && ctx->ui->screen_music_label_progressTime) {
+        lv_label_set_text(ctx->ui->screen_music_label_progressTime, pos_str);
+    }
     
     // 更新总时长
     double duration = custom_media_get_duration();
     char dur_str[16];
     custom_media_format_duration((int64_t)(duration * 1000), dur_str, sizeof(dur_str));
-    lv_label_set_text(ctx->ui->screen_music_label_endTime, dur_str);
+    
+    // 在访问UI元素前再次检查，防止竞态条件
+    if (ctx->ui && ctx->ui->screen_music_label_endTime) {
+        lv_label_set_text(ctx->ui->screen_music_label_endTime, dur_str);
+    }
     
     // 更新进度条
     if (duration > 0) {
         int progress = (int)((pos / duration) * 100);
-        if (ctx->ui->screen_music_slider_progressTime) {
+        // 在访问UI元素前再次检查，防止竞态条件
+        if (ctx->ui && ctx->ui->screen_music_slider_progressTime) {
             lv_slider_set_value(ctx->ui->screen_music_slider_progressTime, progress, LV_ANIM_OFF);
         }
     }
     
-    // 更新歌词
-    custom_media_update_lyric_index(pos);
+    // 更新歌词 - 检查UI有效性后再调用
+    if (ctx->ui) {
+        custom_media_update_lyric_index(pos);
+    }
+    
+    // 检测播放是否完成，如果是则自动播放下一首
+    // 改进的检测逻辑：更准确地检测播放是否完成
+    // 确保UI指针仍然有效，避免在界面切换过程中操作UI
+    if (ctx->ui && duration > 1.0 && pos > 0 && pos >= duration - 0.5) { // 至少1秒的音频，接近播放完成
+        int current_state = custom_media_get_state();
+        // 检查是否播放已停止且之前没有触发过自动播放
+        if (current_state != 1 && !ctx->playback_just_finished) {
+            // 确认播放确实结束了（不是暂停）
+            if (pos >= ctx->last_pos && pos >= duration - 0.3) {
+                ctx->playback_just_finished = true;
+                
+                // 确保播放器核心仍然存在再执行下一步
+                // 重要：这里不再自动播放下一首，因为可能导致界面退出时的竞争条件
+                LOGD("检测到播放完成\n");
+            }
+        }
+    }
+    
+    // 如果当前播放位置远小于总时长，说明可能重新播放或跳转，重置标志
+    if (pos < duration * 0.7 && duration > 2.0) {
+        ctx->playback_just_finished = false;
+    }
+    
+    // 更新最后记录的位置
+    ctx->last_pos = pos;
 }
 
 /**
@@ -556,6 +611,12 @@ void custom_media_deinit(void) {
     
     LOGD("custom_media_deinit: 开始反初始化\n");
     
+    // 设置反初始化标志，防止其他线程继续操作
+    ctx->is_deinitializing = true;
+    
+    // 短暂等待，确保任何正在执行的回调能检测到反初始化标志
+    usleep(20000); // 20ms，减少等待时间
+    
     // 停止定时器（先停止定时器，防止回调访问已释放资源）
     // LVGL定时器是线程安全的，可以直接删除
     LOGD("custom_media_deinit: 停止进度定时器\n");
@@ -578,24 +639,32 @@ void custom_media_deinit(void) {
     // 只有在视频模式下才处理视频控件
     if (ctx->play_mode == 1 && ctx->ui && ctx->ui->screen_video_img_video) {
         LOGD("custom_media_deinit: 清空视频图像控件\n");
-        lv_img_set_src(ctx->ui->screen_video_img_video, LV_SYMBOL_OK); // 使用内置图标代替空字符串
-        lv_obj_invalidate(ctx->ui->screen_video_img_video);
-    } else {
-        LOGD("custom_media_deinit: 非视频模式，跳过视频控件处理\n");
+        lv_img_set_src(ctx->ui->screen_video_img_video, NULL);
     }
     
-    // 等待视频解码器线程完全退出
-    usleep(30000); // 30ms
+    // 重置播放完成检测相关字段，防止在资源释放时出现问题
+    ctx->playback_just_finished = false;
+    ctx->last_pos = 0.0;
     
-    // 等待定时器回调完成（给正在执行的回调时间退出）
-    LOGD("custom_media_deinit: 等待定时器回调完成...\n");
+    // 重置 UI 指针，防止在停止播放过程中更新UI
+    ctx->ui = NULL;
     
-    LOGD("custom_media_deinit: 定时器等待完成\n");
+    // 等待一小段时间确保UI更新停止
+    usleep(20000); // 20ms，减少等待时间
     
-    // 停止播放器（确保解码器线程退出）
-    // 注意：player_core_destroy() 内部已经调用了 player_core_stop()，不需要重复调用
     if (ctx->pc) {
+        LOGD("custom_media_deinit: 调用 player_core_stop\n");
+        player_core_stop(ctx->pc);  // 先停止播放
+        LOGD("custom_media_deinit: player_core_stop 完成\n");
+        
+        // 短暂等待确保所有线程都已完全停止
+        LOGD("custom_media_deinit: 短暂等待确保线程停止\n");
+        usleep(10000); // 10ms等待时间，保持快速响应
+        
+        LOGD("custom_media_deinit: 调用 player_core_destroy\n");
+        
         player_core_destroy(ctx->pc);
+        LOGD("custom_media_deinit: player_core_destroy 完成\n");
         ctx->pc = NULL;
     }
     
@@ -616,12 +685,6 @@ void custom_media_deinit(void) {
         playlist_destroy(ctx->video_playlist);
         ctx->video_playlist = NULL;
     }
-    
-    // 重置 UI 指针
-    ctx->ui = NULL;
-    
-    // 等待所有操作完成
-    usleep(100000); // 100ms
     
     LOGD("custom_media_deinit: done\n");
 }

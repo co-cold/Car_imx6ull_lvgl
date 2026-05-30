@@ -16,9 +16,7 @@
 
 
 
-int screen_home_digital_clock_status_min_value = 25;
-int screen_home_digital_clock_status_hour_value = 11;
-int screen_home_digital_clock_status_sec_value = 50;
+
 void setup_scr_screen_home(lv_ui *ui)
 {
     //Write codes screen_home
@@ -658,18 +656,14 @@ void setup_scr_screen_home(lv_ui *ui)
     struct tm *timeinfo = localtime(&now);
     char time_str[20];
     snprintf(time_str, sizeof(time_str), "%02d:%02d:%02d", 
-                timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
-
+                timeinfo->tm_hour, 
+                timeinfo->tm_min, 
+                timeinfo->tm_sec);
     // 使用当前时间作为初始值
     ui->screen_home_digital_clock_status = lv_dclock_create(ui->screen_home_cont_status_bar, time_str);
-
-    // 同时更新全局变量
-    screen_home_digital_clock_status_hour_value = timeinfo->tm_hour;
-    screen_home_digital_clock_status_min_value = timeinfo->tm_min;
-    screen_home_digital_clock_status_sec_value = timeinfo->tm_sec;
     // 获取当前系统时间
     if (!screen_home_digital_clock_status_timer_enabled) {
-        lv_timer_create(screen_home_digital_clock_status_timer, 1000, NULL);
+        // lv_timer_create(screen_home_digital_clock_status_timer, 1000, NULL);
         screen_home_digital_clock_status_timer_enabled = true;
     }
 

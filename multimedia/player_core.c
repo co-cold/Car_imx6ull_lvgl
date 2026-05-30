@@ -5,10 +5,9 @@
 #include "video/video_double_buf.h"
 #include "utils/ring_buffer.h"
 #include "media/playlist.h"
+#include "utils/debug.h"
 #include <stdlib.h>
 #include <stdio.h>
-
-#define LOGD(fmt, ...) printf("player_core: " fmt, ##__VA_ARGS__)
 
 struct PlayerCore {
     // 共享环形缓冲区
@@ -56,13 +55,32 @@ PlayerCore* player_core_create(void) {
 }
 
 void player_core_destroy(PlayerCore *pc) {
-    if (!pc) return;
+    LOGD("player_core_destroy: 开始销毁播放器核心\n");
+    if (!pc) {
+        LOGD("player_core_destroy: pc为NULL，直接返回\n");
+        return;
+    }
+    
+    // 确保所有组件都已停止，避免在销毁环形缓冲区时仍有组件在使用它
     player_core_stop(pc);
-    if (pc->ao) audio_output_free(pc->ao);
-    rb_free(pc->rb);
-    if (pc->vdb) vdb_destroy(pc->vdb);
+    
+    // 释放共享的环形缓冲区
+    LOGD("player_core_destroy: 释放环形缓冲区\n");
+    if (pc->rb) {
+        LOGD("player_core_destroy: 调用rb_free\n");
+        rb_free(pc->rb);
+        LOGD("player_core_destroy: rb_free 完成\n");
+        pc->rb = NULL;
+    } else {
+        LOGD("player_core_destroy: pc->rb 为 NULL\n");
+    }
+    
+    // 最后释放播放器核心自身的锁
+    LOGD("player_core_destroy: 销毁播放器核心互斥锁\n");
     pthread_mutex_destroy(&pc->lock);
+    LOGD("player_core_destroy: 释放播放器核心内存\n");
     free(pc);
+    LOGD("player_core_destroy: 完成销毁播放器核心\n");
 }
 
 int player_core_play_audio(PlayerCore *pc, const char *file_path) {
@@ -198,37 +216,67 @@ void player_core_resume(PlayerCore *pc) {
 
 void player_core_stop(PlayerCore *pc) {
     LOGD("player_core_stop: 开始停止，state=%d, video_mode=%d\n", pc ? pc->state : -1, pc ? pc->video_mode : -1);
-    if (!pc) return;
+    if (!pc) {
+        LOGD("player_core_stop: pc为NULL，直接返回\n");
+        return;
+    }
+    
+    // 首先设置状态为停止，避免其他地方继续操作
+    LOGD("player_core_stop: 设置状态为停止\n");
+    pc->state = 0;
+    
+    // 先停止音频解码器
     if (pc->ad) {
         LOGD("player_core_stop: 停止音频解码器\n");
         audio_decoder_stop(pc->ad);
+        LOGD("player_core_stop: 释放音频解码器\n");
         audio_decoder_free(pc->ad);
         pc->ad = NULL;
+        LOGD("player_core_stop: 音频解码器已设置为NULL\n");
+    } else {
+        LOGD("player_core_stop: 音频解码器为NULL，跳过\n");
     }
+    
+    // 然后停止音频输出
     if (pc->ao) {
         LOGD("player_core_stop: 停止音频输出\n");
         audio_output_stop(pc->ao);
+        LOGD("player_core_stop: 释放音频输出\n");
         audio_output_free(pc->ao);
         pc->ao = NULL;
+        LOGD("player_core_stop: 音频输出已设置为NULL\n");
+    } else {
+        LOGD("player_core_stop: 音频输出为NULL，跳过\n");
     }
+    
+    // 停止视频解码器
     if (pc->vd) {
         LOGD("player_core_stop: 停止视频解码器\n");
         video_decoder_stop(pc->vd);
         // 等待视频解码器线程完全退出
+        LOGD("player_core_stop: 等待视频解码器线程退出\n");
         usleep(50000);  // 50ms
+        LOGD("player_core_stop: 释放视频解码器\n");
         video_decoder_free(pc->vd);
         pc->vd = NULL;
+        LOGD("player_core_stop: 视频解码器已设置为NULL\n");
+    } else {
+        LOGD("player_core_stop: 视频解码器为NULL，跳过\n");
     }
     
+    // 销毁视频双缓冲
     if (pc->vdb) {
         LOGD("player_core_stop: 销毁视频双缓冲\n");
         vdb_destroy(pc->vdb);
         pc->vdb = NULL;
+        LOGD("player_core_stop: 视频双缓冲已设置为NULL\n");
+    } else {
+        LOGD("player_core_stop: 视频双缓冲为NULL，跳过\n");
     }
     
     // 重置采样率，确保下次播放时重新初始化音频输出
+    LOGD("player_core_stop: 重置采样率和视频模式\n");
     pc->sample_rate = 0;
-    pc->state = 0;
     pc->video_mode = 0;
     LOGD("player_core_stop: 停止完成\n");
 }

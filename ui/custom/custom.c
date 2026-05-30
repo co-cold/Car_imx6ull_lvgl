@@ -19,7 +19,7 @@
 /*********************
  *      DEFINES
  *********************/
-
+#include <time.h>
 /**********************
  *      TYPEDEFS
  **********************/
@@ -51,34 +51,62 @@ void custom_top_init(lv_ui *ui)
         // 第一次进入：保存新创建的对象
         ctrl_center = ui->screen_home_cont_control_center;
     } else {
-        // 非第一次进入：隐藏新创建的对象，显示旧对象
-        lv_obj_add_flag(ui->screen_home_cont_control_center, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_clear_flag(ctrl_center, LV_OBJ_FLAG_HIDDEN);
-        // 更新 ui 结构体指针，指向旧控制栏
-        ui->screen_home_cont_control_center = ctrl_center;
+        if (lv_obj_is_valid(ctrl_center)) {
+            // 非第一次：隐藏新创建的对象，显示旧对象
+            lv_obj_add_flag(ui->screen_home_cont_control_center, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_clear_flag(ctrl_center, LV_OBJ_FLAG_HIDDEN);
+            
+            // ✅ 关键修复：删除新创建的对象，避免内存泄漏
+            if (lv_obj_is_valid(ui->screen_home_cont_control_center)) {
+                lv_obj_del(ui->screen_home_cont_control_center);
+            }
+            
+            // 同步 ui 指针到全局对象
+            ui->screen_home_cont_control_center = ctrl_center;
+        } else {
+            // 旧对象已失效，重新初始化
+            ctrl_center = ui->screen_home_cont_control_center;
+        }
     }
     lv_obj_set_parent(ctrl_center, lv_layer_top());
 
-    /* 2. 处理状态栏 + 时钟 */
+    /* 2. 处理状态栏 + 时钟（关键同步） */
     if (status_bar == NULL) {
         // 第一次进入：保存状态栏和时钟
         status_bar = ui->screen_home_cont_status_bar;
         Gclock = ui->screen_home_digital_clock_status;
     } else {
-        // 非第一次进入：隐藏新创建的状态栏，显示旧状态栏
-        lv_obj_add_flag(ui->screen_home_cont_status_bar, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_clear_flag(status_bar, LV_OBJ_FLAG_HIDDEN);
-        // 更新 ui 结构体指针，指向旧状态栏和时钟
-        ui->screen_home_cont_status_bar = status_bar;
-        ui->screen_home_digital_clock_status = Gclock;
+        if (lv_obj_is_valid(status_bar) && lv_obj_is_valid(Gclock)) {
+            // 非第一次：隐藏新创建的状态栏，显示旧状态栏
+            lv_obj_add_flag(ui->screen_home_cont_status_bar, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_clear_flag(status_bar, LV_OBJ_FLAG_HIDDEN);
+            
+            // ✅ 关键修复：删除新创建的状态栏（含子时钟）
+            if (lv_obj_is_valid(ui->screen_home_cont_status_bar)) {
+                lv_obj_del(ui->screen_home_cont_status_bar);
+            }
+            
+            // 同步 ui 指针到全局对象
+            ui->screen_home_cont_status_bar = status_bar;
+            ui->screen_home_digital_clock_status = Gclock;
+        } else {
+            // 旧对象已失效，重新初始化
+            status_bar = ui->screen_home_cont_status_bar;
+            Gclock = ui->screen_home_digital_clock_status;
+        }
     }
-    lv_obj_set_parent(status_bar, lv_layer_top());
-    lv_obj_clear_flag(status_bar, LV_OBJ_FLAG_HIDDEN); // 确保显示
     
-    // 确保时钟依附于复用的状态栏
+    // 确保全局对象在顶层
+    lv_obj_set_parent(status_bar, lv_layer_top());
+    lv_obj_clear_flag(status_bar, LV_OBJ_FLAG_HIDDEN);
+    
+    // 确保时钟依附于状态栏（双重保险）
     if (lv_obj_is_valid(Gclock) && lv_obj_is_valid(status_bar)) {
         lv_obj_set_parent(Gclock, status_bar);
     }
+
+    lv_obj_clear_flag(status_bar, LV_OBJ_FLAG_CLICKABLE);
+    custom_set_Htimer();
 }
 
 void show_control_center()
@@ -381,4 +409,76 @@ void setup_meter_arc_image(lv_ui *ui)
     // 给 meter 添加事件回调
     lv_obj_add_event_cb(Cmeter, meter_arc_img_event_cb, LV_EVENT_DRAW_PART_BEGIN, NULL);
     lv_obj_add_event_cb(Rmeter, meter_arc_img_event_cb, LV_EVENT_DRAW_PART_BEGIN, NULL);
+}
+
+/**
+  自定义时钟定时器
+*/
+static lv_timer_t *status_bar_timer = NULL;  // 状态栏时钟定时器（常驻）
+static lv_timer_t *screen_clock_timer = NULL; // 屏幕时钟定时器（随屏幕销毁）
+static lv_obj_t *Gclock_analog = NULL;
+static lv_obj_t *Gclock_digital = NULL;
+
+void ALL_clock_timer_cb(lv_timer_t *timer)
+{
+    time_t now = time(NULL);
+    struct tm *timeinfo = localtime(&now);
+
+    /* 更新状态栏时钟（常驻） */
+    if (Gclock && lv_obj_is_valid(Gclock)) {
+        lv_dclock_set_text_fmt(Gclock, "%02d:%02d:%02d",
+                              timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+    }
+
+    /* 更新屏幕模拟时钟 */
+    if (Gclock_analog && lv_obj_is_valid(Gclock_analog)) {
+        int32_t hour_12 = timeinfo->tm_hour % 12;
+        lv_analogclock_set_time(Gclock_analog, hour_12, timeinfo->tm_min, timeinfo->tm_sec);
+    }
+
+    /* 更新屏幕数字时钟 */
+    if (Gclock_digital && lv_obj_is_valid(Gclock_digital)) {
+        lv_dclock_set_text_fmt(Gclock_digital, "%02d:%02d:%02d",
+                              timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+    }
+}
+
+void custom_set_Htimer()
+{
+    if(status_bar_timer == NULL) {
+        status_bar_timer = lv_timer_create(ALL_clock_timer_cb, 1000, NULL);
+    } 
+}
+
+void custom_set_Ctimer()
+{
+    if(screen_clock_timer == NULL) {
+        screen_clock_timer = lv_timer_create(ALL_clock_timer_cb, 1000, NULL);
+    } 
+}
+
+void custom_close_Htimer()
+{
+    if(status_bar_timer) {
+        lv_timer_del(status_bar_timer);
+        status_bar_timer = NULL;
+    }
+}
+
+void custom_close_Ctimer()
+{
+    if(screen_clock_timer) {
+        lv_timer_del(screen_clock_timer);
+        screen_clock_timer = NULL;
+    }
+}
+
+void custom_set_Aclock(lv_obj_t *clock)
+{
+    Gclock_analog = clock;
+}
+
+void custom_set_Dclock(lv_obj_t *clock)
+{
+    Gclock_digital = clock;
 }
