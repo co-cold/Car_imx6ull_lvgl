@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <math.h>
 #include <errno.h>
 #include <pthread.h>
 #include <time.h>
@@ -71,7 +72,14 @@ static void* ao_thread_fn(void *arg) {
 
     free(buf);
     // 线程退出前清空声卡缓冲区，但要确保句柄仍然有效
-    snd_pcm_t *handle_copy = ao->handle;  // 再次获取句柄副本
+    // 创建本地副本以避免在调用drain时句柄被其他线程释放
+    snd_pcm_t *handle_copy = NULL;
+    pthread_mutex_lock(&ao->exit_lock);  // 使用已存在的锁来保护句柄访问
+    if (ao->handle) {
+        handle_copy = ao->handle;
+    }
+    pthread_mutex_unlock(&ao->exit_lock);
+    
     if (handle_copy) {
         snd_pcm_drain(handle_copy);
     }
