@@ -9,6 +9,7 @@
 
 #include "lvgl.h"
 #include <stdio.h>
+#include <time.h>
 #include "gui_guider.h"
 #include "events_init.h"
 #include "widgets_init.h"

@@ -230,6 +230,7 @@ static void* camera_capture_thread_func(void *arg)
     gettimeofday(&start_time, NULL);
     int local_frame_count = 0;
     
+    printf("[HW-CAP] capture thread started\n");
     while (camera->thread_running) {
         struct v4l2_buffer buf;
         memset(&buf, 0, sizeof(buf));
@@ -237,6 +238,7 @@ static void* camera_capture_thread_func(void *arg)
         buf.memory = V4L2_MEMORY_MMAP;
         
         if (ioctl(camera->fd, VIDIOC_DQBUF, &buf) < 0) {
+            usleep(1000);
             continue;
         }
         
@@ -377,6 +379,16 @@ int camera_hw_start(camera_hardware_t *camera)
 {
     if (!camera || camera->state != CAMERA_HW_INITIALIZED) {
         return -1;
+    }
+
+    // 重新入队所有缓冲区（STREAMOFF 清空了队列）
+    for (int i = 0; i < v4l2_buffer_count; i++) {
+        struct v4l2_buffer buf;
+        memset(&buf, 0, sizeof(buf));
+        buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        buf.memory = V4L2_MEMORY_MMAP;
+        buf.index = i;
+        ioctl(camera->fd, VIDIOC_QBUF, &buf);
     }
     
     if (v4l2_start_capture(camera) < 0) {

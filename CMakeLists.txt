@@ -65,6 +65,21 @@ include_directories(${FREETYPE_ROOT}/include)
 include_directories(${FREETYPE_ROOT}/include/freetype2)
 link_directories(${FREETYPE_ROOT}/lib)
 
+################## 添加 D-Bus 支持 ###################
+set(DBUS_ROOT "/home/coco/arm-dbus/_dbus_install" CACHE PATH "Path to libdbus")
+
+# 验证 D-Bus 路径
+if(NOT EXISTS "${DBUS_ROOT}/include/dbus-1.0/dbus/dbus.h")
+    message(FATAL_ERROR "libdbus headers not found at ${DBUS_ROOT}/include/dbus-1.0")
+else()
+    message(STATUS "Using libdbus from: ${DBUS_ROOT}")
+endif()
+
+# D-Bus 头文件路径（注意 arch-dependent 路径）
+include_directories(${DBUS_ROOT}/include/dbus-1.0)
+include_directories(${DBUS_ROOT}/lib/dbus-1.0/include)
+link_directories(${DBUS_ROOT}/lib)
+
 ###################递归处理 lvgl 内部的构建逻辑（编译 lvgl 源码、处理它的依赖等 ）###################################
 # 添加lvgl子目录，CMake会自动查找该目录下的CMakeLists.txt并执行，完成LVGL库的编译和配置
 add_subdirectory(lvgl) 
@@ -93,6 +108,7 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/ui/Eanalogclock  # 添加gui guider analogclock组件目录
     ${PROJECT_SOURCE_DIR}/ui/Ekeyboard  # 添加gui guider keyboard组件目录
     ${PROJECT_SOURCE_DIR}/dev  # 添加设备代码
+    ${PROJECT_SOURCE_DIR}/ipc  # 添加 IPC 层代码
 )
 
 #########################################源文件处理##################################################
@@ -104,8 +120,11 @@ file(GLOB_RECURSE GENERATED_SOURCES "${PROJECT_SOURCE_DIR}/ui/generated/*.c")
 file(GLOB_RECURSE DCLOCK_SOURCES "${PROJECT_SOURCE_DIR}/ui/Edclock/*.c")
 file(GLOB_RECURSE ANALOGDCLOCK_SOURCES "${PROJECT_SOURCE_DIR}/ui/Eanalogclock/*.c")
 file(GLOB_RECURSE KEYBOARD_SOURCES "${PROJECT_SOURCE_DIR}/ui/Ekeyboard/*.c")
-# 设备
-file(GLOB_RECURSE DEV_SOURCES "${PROJECT_SOURCE_DIR}/dev/*.c")
+# 设备（can_drv 归 can_service 进程使用，UI 进程只用 camera）
+set(DEV_SOURCES "${PROJECT_SOURCE_DIR}/dev/camera_hardware.c")
+set(CAN_DRV_SOURCES "${PROJECT_SOURCE_DIR}/dev/can_drv.c")
+# IPC 层源文件
+file(GLOB_RECURSE IPC_SOURCES "${PROJECT_SOURCE_DIR}/ipc/*.c")
 
 # 定义驱动源文件列表，包含LVGL的帧缓冲显示驱动和输入设备驱动
 set(DIRVER_SOURCES
@@ -122,7 +141,8 @@ add_executable(lvgl_demo
     ${DCLOCK_SOURCES}# gui guider dclock组件
     ${ANALOGDCLOCK_SOURCES}# gui guider analogclock组件
     ${KEYBOARD_SOURCES}# gui guider keyboard组件
-    ${DEV_SOURCES} # 外设
+    ${DEV_SOURCES} # 外设（camera）
+    ${IPC_SOURCES} # IPC 层
 )
 
 # 为my_gui_app可执行文件链接所需的库
@@ -138,4 +158,43 @@ target_link_libraries(lvgl_demo
                         pthread            # 链接线程库（LVGL的多线程功能依赖）
                         libyuv
                         multimedia
+                        dbus-1             # D-Bus 进程间通信
+                        rt                 # 共享内存（shm_open）
                      )
+
+################## CAN 服务进程 ###################
+add_executable(can_service
+    services/can_service.c
+    ${CAN_DRV_SOURCES}
+)
+
+target_link_libraries(can_service PRIVATE
+    pthread
+    dbus-1
+)
+
+################## Camera 服务进程 ###################
+add_executable(camera_service
+    services/camera_service.c
+    ${DEV_SOURCES}
+)
+
+target_link_libraries(camera_service PRIVATE
+    pthread
+    dbus-1
+    dl
+    rt
+)
+
+################## Media 服务进程 ###################
+add_executable(media_service
+    services/media_service.c
+)
+
+target_link_libraries(media_service PRIVATE
+    multimedia
+    pthread
+    dbus-1
+    rt
+    dl
+)

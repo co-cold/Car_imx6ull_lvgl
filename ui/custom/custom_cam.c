@@ -1,12 +1,19 @@
 #include "custom_cam.h"
+#include "ipc/ipc_camera.h"
 #include "gui_guider.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <unistd.h>
+#include <signal.h>
+#include <sys/wait.h>
+
+#define BUS_ADDRESS "unix:path=/tmp/lvgl-dbus-session"
 
 // 全局摄像头UI管理器
 static camera_ui_t *cam_ui = NULL;
+static pid_t g_camera_svc_pid = 0;
 
 // 状态转字符串函数
 const char* camera_ui_state_to_string(camera_ui_state_t state) {
@@ -24,12 +31,11 @@ const char* camera_ui_state_to_string(camera_ui_state_t state) {
 static void camera_display_timer_cb(lv_timer_t *timer) {
     camera_ui_t *camera_ui = timer->user_data;
     
-    if (!camera_ui || !camera_ui->hw_camera) {
+    if (!camera_ui) {
         return;
     }
 
-    // 通过接口函数获取最新帧
-    if (camera_hw_get_latest_frame(camera_ui->hw_camera, camera_ui->display_buffer) == 0) {
+    if (ipc_camera_get_frame(camera_ui->display_buffer, camera_ui->buffer_size) == 0) {
         lv_obj_invalidate(camera_ui->display_img);
     }
 }
@@ -43,15 +49,36 @@ camera_ui_t* camera_ui_init(lv_obj_t *display_img, const char *device, int width
         return NULL;
     }
     
-    if (!device) {
-        printf("错误: 设备路径为空\n");
-        return NULL;
-    }
-    
     // 如果已经有实例，先销毁
     if (cam_ui) {
         printf("警告: 摄像头UI已存在，先销毁旧的\n");
         camera_ui_deinit(cam_ui);
+    }
+
+    // 先杀掉可能残留的旧 camera_service
+    if (g_camera_svc_pid > 0) {
+        kill(g_camera_svc_pid, SIGTERM);
+        waitpid(g_camera_svc_pid, NULL, 0);
+        g_camera_svc_pid = 0;
+    }
+
+    // 拉起 camera_service 进程
+    pid_t pid = fork();
+    if (pid == 0) {
+        execl("./camera_service", "camera_service", NULL);
+        perror("execl camera_service");
+        _exit(1);
+    } else if (pid > 0) {
+        g_camera_svc_pid = pid;
+        printf("camera_service started, pid=%d\n", pid);
+    }
+
+    // 等待 camera_service 初始化完成（硬件 + D-Bus 注册）
+    usleep(1000000);
+
+    // 初始化 IPC 连接
+    if (ipc_camera_init(BUS_ADDRESS, width, height, NULL, NULL) != 0) {
+        printf("警告: IPC Camera 初始化失败，摄像头不可用\n");
     }
     
     // 创建摄像头UI结构
@@ -77,24 +104,6 @@ camera_ui_t* camera_ui_init(lv_obj_t *display_img, const char *device, int width
     
     // 初始化为黑色
     memset(camera_ui->display_buffer, 0, camera_ui->buffer_size);
-    
-    // 创建硬件实例
-    camera_ui->hw_camera = camera_hw_create(device, width, height, fps, CAMERA_FORMAT_RGB565);
-    if (!camera_ui->hw_camera) {
-        printf("错误: 创建摄像头硬件失败\n");
-        free(camera_ui->display_buffer);
-        free(camera_ui);
-        return NULL;
-    }
-    
-    // 初始化硬件
-    if (camera_hw_init(camera_ui->hw_camera) < 0) {
-        printf("错误: 摄像头硬件初始化失败\n");
-        camera_hw_destroy(camera_ui->hw_camera);
-        free(camera_ui->display_buffer);
-        free(camera_ui);
-        return NULL;
-    }
     
     // 设置图片源
     camera_ui->display_img = display_img;
@@ -146,32 +155,26 @@ void camera_ui_deinit(camera_ui_t *camera_ui) {
         printf("已删除LVGL定时器\n");
     }
     
-    // 2. 停止摄像头硬件
+    // 2. 停止摄像头（通过 IPC）
     if (camera_ui->state == CAMERA_UI_RUNNING) {
         printf("摄像头正在运行，先停止\n");
         camera_ui_stop(camera_ui);
     }
     
-    // 3. 销毁硬件
-    if (camera_ui->hw_camera) {
-        camera_hw_destroy(camera_ui->hw_camera);
-        camera_ui->hw_camera = NULL;
-    }
-    
-    // 4. 清理LVGL图片源
+    // 3. 清理LVGL图片源
     if (camera_ui->display_img) {
         lv_img_set_src(camera_ui->display_img, NULL);
         camera_ui->display_img = NULL;
         printf("已清除LVGL图片源\n");
     }
     
-    // 5. 释放缓冲区
+    // 4. 释放缓冲区
     if (camera_ui->display_buffer) {
         free(camera_ui->display_buffer);
         camera_ui->display_buffer = NULL;
     }
     
-    // 6. 记录并清除全局变量
+    // 5. 记录并清除全局变量
     camera_ui_state_t old_state = camera_ui->state;
     
     if (cam_ui == camera_ui) {
@@ -179,7 +182,26 @@ void camera_ui_deinit(camera_ui_t *camera_ui) {
         printf("已清除全局变量cam_ui\n");
     }
     
-    // 7. 最后释放结构体
+    // 6. IPC 反初始化
+    ipc_camera_deinit();
+
+    // 7. 杀掉 camera_service 进程
+    if (g_camera_svc_pid > 0) {
+        kill(g_camera_svc_pid, SIGKILL);
+        int retries = 20;
+        while (retries-- > 0) {
+            if (waitpid(g_camera_svc_pid, NULL, WNOHANG) != 0)
+                break;
+            usleep(50000);
+        }
+        if (retries <= 0) {
+            printf("警告: camera_service 未响应，强制放弃\n");
+        }
+        printf("camera_service stopped, pid=%d\n", g_camera_svc_pid);
+        g_camera_svc_pid = 0;
+    }
+
+    // 8. 最后释放结构体
     free(camera_ui);
     
     printf("摄像头UI已反初始化，之前状态=%s\n", camera_ui_state_to_string(old_state));
@@ -206,9 +228,9 @@ int camera_ui_start(camera_ui_t *camera_ui) {
         return -1;
     }
     
-    // 启动硬件采集
-    if (camera_hw_start(camera_ui->hw_camera) < 0) {
-        printf("错误: 启动摄像头硬件失败\n");
+    // 启动摄像头（通过 IPC）
+    if (ipc_camera_start() < 0) {
+        printf("错误: 启动摄像头失败\n");
         camera_ui->state = CAMERA_UI_ERROR;
         return -1;
     }
@@ -239,9 +261,9 @@ int camera_ui_stop(camera_ui_t *camera_ui) {
         return 0;
     }
     
-    // 停止硬件采集
-    if (camera_hw_stop(camera_ui->hw_camera) < 0) {
-        printf("错误: 停止摄像头硬件失败\n");
+    // 停止摄像头（通过 IPC）
+    if (ipc_camera_stop() < 0) {
+        printf("错误: 停止摄像头失败\n");
         camera_ui->state = CAMERA_UI_ERROR;
         return -1;
     }

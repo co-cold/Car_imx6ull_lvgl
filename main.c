@@ -6,13 +6,20 @@
 #include <pthread.h>
 #include <time.h>
 #include <sys/time.h>
+#include <sys/wait.h>
 #include <getopt.h>
 #include <string.h>
 #include <stdlib.h>
+#include <signal.h>
 
 #include "gui_guider.h"
 #include "events_init.h"                // 包含事件初始化相关函数声明
 #include "custom.h"                     // 包含自定义功能相关函数声明
+
+#include "ipc/ipc_can.h"
+#include "ipc/ipc_camera.h"
+
+#define CAN_BUS_ADDRESS "unix:path=/tmp/lvgl-dbus-session"
 
 lv_ui guider_ui;                        // 声明GUI Guider生成的UI结构体实例
 
@@ -59,43 +66,62 @@ int lvgl_init()
     // lv_indev_set_cursor(mouse_indev, cursor_obj);             /*Connect the image  object to the driver*/
 }
 
+static void launch_can_service(void)
+{
+    pid_t pid = fork();
+    if (pid == 0) {
+        execl("./can_service", "can_service", NULL);
+        perror("execl can_service");
+        _exit(1);
+    } else if (pid > 0) {
+        printf("[main] can_service launched, pid=%d\n", pid);
+    } else {
+        perror("fork");
+    }
+}
+
+static void reap_child(int sig)
+{
+    (void)sig;
+    while (waitpid(-1, NULL, WNOHANG) > 0);
+}
+
+static void on_encoder_update(const Encoder_Data_t *enc, void *user_data)
+{
+    (void)enc;
+    (void)user_data;
+}
+
 int main(int argc, char *argv[])
 {
     lvgl_init();
 
+    signal(SIGCHLD, reap_child);
+
+    launch_can_service();
+
+    if (ipc_can_init(CAN_BUS_ADDRESS, on_encoder_update, NULL) != 0) {
+        fprintf(stderr, "[main] IPC CAN init failed, running without CAN\n");
+    }
+
     /* Initialize extra libraries (PNG, JPEG, etc.) */
     lv_extra_init();
     printf("LVGL extra libraries initialized\n");
-    
-    // 检查 PNG 解码是否可用
-    #if LV_USE_PNG
-    printf("PNG decoder: enabled\n");
-    #else
-    printf("PNG decoder: disabled\n");
-    #endif
-    
-    // 检查 JPEG 解码是否可用
-    #if LV_USE_SJPG
-    printf("JPEG decoder: enabled\n");
-    #else
-    printf("JPEG decoder: disabled\n");
-    #endif
-    
-    //lv_freetype_init(8, 16, 256 * 1024);
-    /*Create a Demo*/
-    // lv_demo_widgets();
-    // lv_demo_music();
 
     setup_ui(&guider_ui);               // 调用GUI Guider生成的UI设置函数，初始化界面
     events_init(&guider_ui);            // 初始化事件处理函数，绑定UI元素与事件
     custom_init(&guider_ui);            // 初始化自定义功能
-    printf("bug\n");
+
     /*Handle LitlevGL tasks (tickless mode)*/
     while(1) {
         lv_timer_handler();
+        ipc_can_dispatch(0);
+        ipc_camera_dispatch(0);
         usleep(5000);
     }
 
+    ipc_can_deinit();
+    ipc_camera_deinit();
     return 0;
 }
 

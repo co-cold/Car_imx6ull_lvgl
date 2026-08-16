@@ -19,6 +19,7 @@ extern "C" {
 #include "custom_cam.h"
 #include "custom_media.h"
 #include "custom_font.h"
+#include "custom_carDashboard.h"
 
 void events_init(lv_ui *ui);
 

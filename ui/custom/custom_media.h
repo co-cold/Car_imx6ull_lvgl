@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "gui_guider.h"
-#include "player_core.h"
 #include "media/playlist.h"
 
 // 调试宏控制

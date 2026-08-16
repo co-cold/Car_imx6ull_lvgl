@@ -817,14 +817,16 @@ static void screen_carDashboard_event_handler (lv_event_t *e)
     switch (code) {
     case LV_EVENT_SCREEN_LOADED:
     {
-        start_dashboard_animation(&guider_ui);
+        // start_dashboard_animation(&guider_ui);
+        car_dashboard_init(&guider_ui);
         set_status_bar(0);
         //event_carDashboard
         break;
     }
     case LV_EVENT_SCREEN_UNLOAD_START:
     {
-        stop_dashboard_animation();
+        // stop_dashboard_animation();
+        car_dashboard_deinit();
         break;
     }
     case LV_EVENT_GESTURE:

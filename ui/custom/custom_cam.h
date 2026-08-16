@@ -3,7 +3,6 @@
 
 #include "lvgl.h"
 #include "gui_guider.h"
-#include "camera_hardware.h"
 
 // 摄像头UI状态
 typedef enum {
@@ -16,7 +15,6 @@ typedef enum {
 
 // 摄像头UI管理器
 typedef struct {
-    camera_hardware_t *hw_camera;
     lv_obj_t *display_img;
     lv_img_dsc_t img_desc;
     lv_timer_t *update_timer;

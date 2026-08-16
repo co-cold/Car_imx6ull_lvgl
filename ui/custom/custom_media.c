@@ -3,8 +3,12 @@
 #include <dirent.h>
 #include <errno.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <signal.h>
+#include <sys/wait.h>
 #include "custom_media.h"
-#include "player_core.h"
+#include "ipc_music.h"
+#include "ipc_video.h"
 #include "playlist.h"
 #include "media_metadata.h"
 #include "custom_font.h"
@@ -21,9 +25,10 @@
 #define VIDEO_WIDTH 800
 #define VIDEO_HEIGHT 450
 
+#define BUS_ADDRESS "unix:path=/tmp/lvgl-dbus-session"
+
 // 媒体播放上下文结构体
 typedef struct {
-    PlayerCore *pc;                     // 播放器核心
     lv_ui *ui;                          // LVGL UI 指针
     lv_timer_t *progress_timer;         // 进度更新定时器
     lv_timer_t *video_frame_timer;      // 视频帧更新定时器
@@ -50,9 +55,11 @@ typedef struct {
 // 全局媒体上下文
 static MediaContext g_media_ctx = {0};
 
+// 音乐服务进程管理
+static pid_t g_media_svc_pid = 0;
+
 // 前向声明
 static void progress_update_callback(lv_timer_t *timer);
-static uint8_t* get_song_cover(MediaContext *ctx, int idx, size_t *size);
 static MediaContext* get_context(void);
 
 // 公共函数前向声明（解决调用顺序问题）
@@ -266,23 +273,42 @@ void custom_media_init(lv_ui *ui) {
     ctx->ui = ui;
     LOGD("custom_media_init: ui=%p\n", ctx->ui);
     
-    // 确保播放器核心存在
-    if (!ctx->pc) {
-        ctx->pc = player_core_create();
-        LOGD("custom_media_init: 创建播放器核心\n");
+    // 启动 media_service 进程（仅首次）
+    if (g_media_svc_pid <= 0) {
+        pid_t pid = fork();
+        if (pid == 0) {
+            execl("./media_service", "media_service", NULL);
+            perror("execl media_service");
+            _exit(1);
+        } else if (pid > 0) {
+            g_media_svc_pid = pid;
+            printf("[custom_media] media_service started, pid=%d\n", pid);
+        }
+        usleep(1000000);
+    }
+    
+    // 初始化 IPC 连接（仅首次）
+    static int ipc_initialized = 0;
+    if (!ipc_initialized) {
+        if (ipc_music_init(BUS_ADDRESS) != 0) {
+            fprintf(stderr, "[custom_media] IPC Music init failed\n");
+        }
+        if (ipc_video_init(BUS_ADDRESS, NULL, NULL) != 0) {
+            fprintf(stderr, "[custom_media] IPC Video init failed\n");
+        } else {
+            ipc_initialized = 1;
+        }
     }
     
     // 确保音频播放列表存在
     if (!ctx->audio_playlist) {
         ctx->audio_playlist = playlist_create(PLAYLIST_TYPE_AUDIO, MAX_SONGS);
-        player_core_set_audio_playlist(ctx->pc, ctx->audio_playlist);
         LOGD("custom_media_init: 创建音频播放列表\n");
     }
     
     // 确保视频播放列表存在
     if (!ctx->video_playlist) {
         ctx->video_playlist = playlist_create(PLAYLIST_TYPE_VIDEO, MAX_VIDEOS);
-        player_core_set_video_playlist(ctx->pc, ctx->video_playlist);
         LOGD("custom_media_init: 创建视频播放列表\n");
     }
     
@@ -510,9 +536,10 @@ static void custom_media_update_song_info(int idx) {
  */
 static void progress_update_callback(lv_timer_t *timer) {
     MediaContext *ctx = get_context();
-    if (!ctx->ui || !ctx->pc) return;
+    if (!ctx->ui) return;
     
-    // 防止在反初始化过程中更新UI
+    ipc_music_dispatch(0);
+    ipc_video_dispatch(0);
     if (ctx->is_deinitializing) {
         return;
     }
@@ -611,14 +638,9 @@ void custom_media_deinit(void) {
     
     LOGD("custom_media_deinit: 开始反初始化\n");
     
-    // 设置反初始化标志，防止其他线程继续操作
     ctx->is_deinitializing = true;
+    usleep(20000);
     
-    // 短暂等待，确保任何正在执行的回调能检测到反初始化标志
-    usleep(20000); // 20ms，减少等待时间
-    
-    // 停止定时器（先停止定时器，防止回调访问已释放资源）
-    // LVGL定时器是线程安全的，可以直接删除
     LOGD("custom_media_deinit: 停止进度定时器\n");
     if (ctx->progress_timer) {
         lv_timer_del(ctx->progress_timer);
@@ -635,40 +657,18 @@ void custom_media_deinit(void) {
         LOGD("custom_media_deinit: 视频帧定时器为NULL\n");
     }
     
-    // 清空视频图像控件内容（防止屏幕切换时访问已释放的帧缓冲区）
-    // 只有在视频模式下才处理视频控件
     if (ctx->play_mode == 1 && ctx->ui && ctx->ui->screen_video_img_video) {
         LOGD("custom_media_deinit: 清空视频图像控件\n");
         lv_img_set_src(ctx->ui->screen_video_img_video, NULL);
     }
     
-    // 重置播放完成检测相关字段，防止在资源释放时出现问题
     ctx->playback_just_finished = false;
     ctx->last_pos = 0.0;
-    
-    // 重置 UI 指针，防止在停止播放过程中更新UI
     ctx->ui = NULL;
+    usleep(20000);
     
-    // 等待一小段时间确保UI更新停止
-    usleep(20000); // 20ms，减少等待时间
+    ipc_music_stop();
     
-    if (ctx->pc) {
-        LOGD("custom_media_deinit: 调用 player_core_stop\n");
-        player_core_stop(ctx->pc);  // 先停止播放
-        LOGD("custom_media_deinit: player_core_stop 完成\n");
-        
-        // 短暂等待确保所有线程都已完全停止
-        LOGD("custom_media_deinit: 短暂等待确保线程停止\n");
-        usleep(10000); // 10ms等待时间，保持快速响应
-        
-        LOGD("custom_media_deinit: 调用 player_core_destroy\n");
-        
-        player_core_destroy(ctx->pc);
-        LOGD("custom_media_deinit: player_core_destroy 完成\n");
-        ctx->pc = NULL;
-    }
-    
-    // 释放歌词内存
     for (int i = 0; i < ctx->lyrics_count; i++) {
         free(ctx->lyrics[i]);
         ctx->lyrics[i] = NULL;
@@ -676,7 +676,6 @@ void custom_media_deinit(void) {
     ctx->lyrics_count = 0;
     ctx->current_lyric_idx = -1;
     
-    // 销毁播放列表
     if (ctx->audio_playlist) {
         playlist_destroy(ctx->audio_playlist);
         ctx->audio_playlist = NULL;
@@ -687,6 +686,19 @@ void custom_media_deinit(void) {
     }
     
     LOGD("custom_media_deinit: done\n");
+
+    ipc_music_deinit();
+    ipc_video_deinit();
+
+    if (g_media_svc_pid > 0) {
+        kill(g_media_svc_pid, SIGKILL);
+        int retries = 0;
+        while (waitpid(g_media_svc_pid, NULL, WNOHANG) == 0 && retries < 10) {
+            usleep(100000);
+            retries++;
+        }
+        g_media_svc_pid = 0;
+    }
 }
 
 /**
@@ -697,7 +709,7 @@ void custom_media_deinit(void) {
 int custom_media_play_audio(const char *file) {
     MediaContext *ctx = get_context();
     
-    if (!file || !ctx->pc) return -1;
+    if (!file) return -1;
     
     int play_mode = custom_media_get_play_mode();
     LOGD("custom_media_play_audio: 播放音频 %s, 播放模式=%d\n", file, play_mode);
@@ -728,7 +740,7 @@ int custom_media_play_audio(const char *file) {
     }
     
     // 播放音频
-    int result = player_core_play_audio(ctx->pc, file);
+    int result = ipc_music_play_audio(file);
     
     // 更新UI
     if (ctx->ui && idx >= 0) {
@@ -746,7 +758,7 @@ int custom_media_play_audio(const char *file) {
 int custom_media_play_song_by_index(int idx) {
     MediaContext *ctx = get_context();
     
-    if (!ctx->audio_playlist || !ctx->pc) return -1;
+    if (!ctx->audio_playlist) return -1;
     
     PlaylistItem *item = playlist_get_item(ctx->audio_playlist, idx);
     if (!item) return -1;
@@ -761,7 +773,7 @@ int custom_media_play_song_by_index(int idx) {
     playlist_set_current_idx(ctx->audio_playlist, idx);
     
     // 播放指定索引的歌曲
-    int result = player_core_play_audio(ctx->pc, item->file_path);
+    int result = ipc_music_play_audio(item->file_path);
     
     // 打印当前播放歌曲的元数据信息
     if (result == 0) {
@@ -808,7 +820,7 @@ int custom_media_play_song_by_index(int idx) {
 int custom_media_play_next(void) {
     MediaContext *ctx = get_context();
     
-    if (!ctx->audio_playlist || !ctx->pc) return -1;
+    if (!ctx->audio_playlist) return -1;
     
     int count = playlist_get_count(ctx->audio_playlist);
     if (count <= 0) return -1;
@@ -820,7 +832,13 @@ int custom_media_play_next(void) {
     }
     
     // 播放下一首
-    int result = player_core_play_next(ctx->pc);
+    int result = playlist_next(ctx->audio_playlist);
+    if (result >= 0) {
+        PlaylistItem *item = playlist_get_current_item(ctx->audio_playlist);
+        if (item) {
+            result = ipc_music_play_audio(item->file_path);
+        }
+    }
     
     // 更新UI
     if (ctx->ui) {
@@ -842,7 +860,7 @@ int custom_media_play_next(void) {
 int custom_media_play_prev(void) {
     MediaContext *ctx = get_context();
     
-    if (!ctx->audio_playlist || !ctx->pc) return -1;
+    if (!ctx->audio_playlist) return -1;
     
     int count = playlist_get_count(ctx->audio_playlist);
     if (count <= 0) return -1;
@@ -854,7 +872,13 @@ int custom_media_play_prev(void) {
     }
     
     // 播放上一首
-    int result = player_core_play_prev(ctx->pc);
+    int result = playlist_prev(ctx->audio_playlist);
+    if (result >= 0) {
+        PlaylistItem *item = playlist_get_current_item(ctx->audio_playlist);
+        if (item) {
+            result = ipc_music_play_audio(item->file_path);
+        }
+    }
     
     // 更新UI
     if (ctx->ui) {
@@ -1022,40 +1046,38 @@ void custom_media_format_duration(int64_t duration_ms, char *buf, size_t buf_siz
  * @return 成功返回0，失败返回-1
  */
 int custom_media_play_video(const char *file, int width, int height) {
-    MediaContext *ctx = get_context();
-    return ctx->pc ? player_core_play_video(ctx->pc, file, width, height) : -1;
+    return ipc_video_play(file, width, height);
 }
 
 /**
  * @brief 暂停当前播放
  */
 void custom_media_pause(void) {
-    MediaContext *ctx = get_context();
-    if (ctx->pc) {
-        int play_mode = custom_media_get_play_mode();
-        LOGD("custom_media_pause: 播放模式=%d\n", play_mode);
-        player_core_pause(ctx->pc);
-    }
+    int play_mode = custom_media_get_play_mode();
+    LOGD("custom_media_pause: 播放模式=%d\n", play_mode);
+    if (play_mode == 1)
+        ipc_video_pause();
+    else
+        ipc_music_pause();
 }
 
 /**
  * @brief 恢复暂停的播放
  */
 void custom_media_resume(void) {
-    MediaContext *ctx = get_context();
-    if (ctx->pc) {
-        int play_mode = custom_media_get_play_mode();
-        int state = custom_media_get_state();
-        LOGD("custom_media_resume: 状态=%d, 播放模式=%d\n", state, play_mode);
-        
-        // 如果是空闲状态且是视频模式，不执行任何操作（防止自动播放）
-        if (state == 0 && play_mode == 1) {
-            LOGD("custom_media_resume: 视频模式下空闲状态，忽略\n");
-            return;
-        }
-        
-        player_core_resume(ctx->pc);
+    int play_mode = custom_media_get_play_mode();
+    int state = custom_media_get_state();
+    LOGD("custom_media_resume: 状态=%d, 播放模式=%d\n", state, play_mode);
+    
+    if (state == 0 && play_mode == 1) {
+        LOGD("custom_media_resume: 视频模式下空闲状态，忽略\n");
+        return;
     }
+    
+    if (play_mode == 1)
+        ipc_video_resume();
+    else
+        ipc_music_resume();
 }
 
 /**
@@ -1081,15 +1103,17 @@ int custom_media_get_play_mode(void) {
  */
 void custom_media_stop(void) {
     MediaContext *ctx = get_context();
+    int play_mode = custom_media_get_play_mode();
     
-    // 停止视频帧定时器（如果存在）
     if (ctx->video_frame_timer) {
         lv_timer_del(ctx->video_frame_timer);
         ctx->video_frame_timer = NULL;
     }
     
-    // 停止播放器核心
-    if (ctx->pc) player_core_stop(ctx->pc);
+    if (play_mode == 1)
+        ipc_video_stop();
+    else
+        ipc_music_stop();
 }
 
 /**
@@ -1097,8 +1121,11 @@ void custom_media_stop(void) {
  * @param sec 目标时间（单位：秒）
  */
 void custom_media_seek(double sec) {
-    MediaContext *ctx = get_context();
-    if (ctx->pc) player_core_seek(ctx->pc, sec);
+    int play_mode = custom_media_get_play_mode();
+    if (play_mode == 1)
+        ipc_video_seek(sec);
+    else
+        ipc_music_seek(sec);
 }
 
 /**
@@ -1106,8 +1133,10 @@ void custom_media_seek(double sec) {
  * @return 当前播放时间（秒）
  */
 double custom_media_get_position(void) {
-    MediaContext *ctx = get_context();
-    return ctx->pc ? player_core_get_position(ctx->pc) : 0.0;
+    int play_mode = custom_media_get_play_mode();
+    if (play_mode == 1)
+        return ipc_video_get_position();
+    return ipc_music_get_position();
 }
 
 /**
@@ -1115,8 +1144,10 @@ double custom_media_get_position(void) {
  * @return 媒体总时长（秒）
  */
 double custom_media_get_duration(void) {
-    MediaContext *ctx = get_context();
-    return ctx->pc ? player_core_get_duration(ctx->pc) : 0.0;
+    int play_mode = custom_media_get_play_mode();
+    if (play_mode == 1)
+        return ipc_video_get_duration();
+    return ipc_music_get_duration();
 }
 
 /**
@@ -1124,8 +1155,10 @@ double custom_media_get_duration(void) {
  * @return 0:idle, 1:playing, 2:paused
  */
 int custom_media_get_state(void) {
-    MediaContext *ctx = get_context();
-    return ctx->pc ? player_core_get_state(ctx->pc) : 0;
+    int play_mode = custom_media_get_play_mode();
+    if (play_mode == 1)
+        return ipc_video_get_state();
+    return ipc_music_get_state();
 }
 
 /**
@@ -1133,10 +1166,11 @@ int custom_media_get_state(void) {
  * @param volume 音量值（0.0 - 2.0，1.0为原始音量）
  */
 void custom_media_set_volume(float volume) {
-    MediaContext *ctx = get_context();
-    if (ctx->pc) {
-        player_core_set_volume(ctx->pc, volume);
-    }
+    int play_mode = custom_media_get_play_mode();
+    if (play_mode == 1)
+        ipc_video_set_volume(volume);
+    else
+        ipc_music_set_volume(volume);
 }
 
 /**
@@ -1144,8 +1178,10 @@ void custom_media_set_volume(float volume) {
  * @return 当前音量值
  */
 float custom_media_get_volume(void) {
-    MediaContext *ctx = get_context();
-    return ctx->pc ? player_core_get_volume(ctx->pc) : 1.0f;
+    int play_mode = custom_media_get_play_mode();
+    if (play_mode == 1)
+        return ipc_video_get_volume();
+    return ipc_music_get_volume();
 }
 
 /**
@@ -1153,22 +1189,17 @@ float custom_media_get_volume(void) {
  * @return 视频帧缓冲区指针，若无则返回NULL
  */
 uint8_t* custom_media_get_video_frame(void) {
-    MediaContext *ctx = get_context();
-    if (!ctx->pc) return NULL;
-    return player_core_get_video_frame(ctx->pc);
+    static uint8_t frame_buffer[VIDEO_WIDTH * VIDEO_HEIGHT * 2];
+    if (ipc_video_get_frame(frame_buffer, sizeof(frame_buffer)) == 0) {
+        return frame_buffer;
+    }
+    return NULL;
 }
 
 /**
  * @brief 释放已获取的视频帧，允许解码器写入新帧
  */
 void custom_media_release_video_frame(void) {
-    MediaContext *ctx = get_context();
-    if (ctx->pc) {
-        // 额外检查播放器状态
-        if (custom_media_get_state() == 1 && custom_media_get_play_mode() == 1) {
-            player_core_release_video_frame(ctx->pc);
-        }
-    }
 }
 
 /**
@@ -1178,59 +1209,34 @@ void custom_media_release_video_frame(void) {
 void custom_media_update_video_frame(lv_timer_t *timer) {
     MediaContext *ctx = get_context();
     
-    // 检查上下文是否有效
     if (!ctx) return;
-    
-    // 检查播放器核心是否存在（最重要：防止访问已释放的资源）
-    if (!ctx->pc) return;
-    
-    // 检查 UI 是否有效
     if (!ctx->ui || !ctx->ui->screen_video_img_video) return;
-    
-    // 检查是否正在播放
     if (custom_media_get_state() != 1) return;
-    
-    // 在访问播放器核心之前再次检查（防止竞态条件）
-    if (!ctx->pc) return;
     
     uint8_t *frame = custom_media_get_video_frame();
     if (frame) {
-        // 创建图像描述符显示RGB565格式视频帧
         static lv_img_dsc_t video_img_dsc = {
             .header.always_zero = 0,
             .header.w = VIDEO_WIDTH,
             .header.h = VIDEO_HEIGHT,
-            .header.cf = LV_IMG_CF_TRUE_COLOR, // RGB565 格式
+            .header.cf = LV_IMG_CF_TRUE_COLOR,
             .data_size = VIDEO_WIDTH * VIDEO_HEIGHT * 2,
             .data = NULL
         };
-        // 使用常量视频分辨率
         video_img_dsc.header.w = VIDEO_WIDTH;
         video_img_dsc.header.h = VIDEO_HEIGHT;
         video_img_dsc.data_size = VIDEO_WIDTH * VIDEO_HEIGHT * 2;
         video_img_dsc.data = frame;
         
-        // 再次检查 UI（防止在设置过程中 UI 被销毁）
         if (!ctx->ui || !ctx->ui->screen_video_img_video) return;
         
-        // 将帧数据设置到视频图像控件
         lv_img_set_src(ctx->ui->screen_video_img_video, &video_img_dsc);
-        
-        // 设置视频居中显示
         lv_obj_center(ctx->ui->screen_video_img_video);
-        
         lv_obj_invalidate(ctx->ui->screen_video_img_video);
     }
     
-    // 在释放缓冲区之前再次检查播放器核心
-    if (!ctx->pc) return;
-    
-    // 无论是否获取到帧，都需要释放缓冲区（重置ui_busy标志）
-    // 这是关键：确保解码器可以继续写入新帧
-    custom_media_release_video_frame();
-    
     // 在更新进度之前再次检查
-    if (!ctx->pc || !ctx->ui) return;
+    if (!ctx->ui) return;
     
     // 同时更新进度条和时间显示
     custom_media_update_video_progress();
@@ -1308,10 +1314,6 @@ int custom_media_play_video_by_index(int idx) {
         LOGD("custom_media_play_video_by_index: video_playlist 为空\n");
         return -1;
     }
-    if (!ctx->pc) {
-        LOGD("custom_media_play_video_by_index: pc 为空\n");
-        return -1;
-    }
     
     PlaylistItem *item = playlist_get_item(ctx->video_playlist, idx);
     if (!item) {
@@ -1344,7 +1346,7 @@ int custom_media_play_video_by_index(int idx) {
     }
     
     // 播放视频
-    int result = player_core_play_video(ctx->pc, item->file_path, VIDEO_WIDTH, VIDEO_HEIGHT);
+    int result = ipc_video_play(item->file_path, VIDEO_WIDTH, VIDEO_HEIGHT);
     LOGD("custom_media_play_video_by_index: 结果=%d\n", result);
     
     if (result != 0) {
@@ -1381,23 +1383,25 @@ int custom_media_play_video_by_index(int idx) {
  */
 int custom_media_play_next_video(void) {
     MediaContext *ctx = get_context();
-    if (!ctx->video_playlist || !ctx->pc) return -1;
+    if (!ctx->video_playlist) return -1;
     
     int count = playlist_get_count(ctx->video_playlist);
     if (count <= 0) return -1;
     
-    // 停止视频帧更新定时器
     if (ctx->video_frame_timer) {
         lv_timer_del(ctx->video_frame_timer);
         ctx->video_frame_timer = NULL;
-        // 短暂等待，确保定时器完全停止
         usleep(50000);
     }
     
-    // 播放下一个
-    int result = player_core_play_next(ctx->pc);
+    int result = playlist_next(ctx->video_playlist);
+    if (result >= 0) {
+        PlaylistItem *item = playlist_get_current_item(ctx->video_playlist);
+        if (item) {
+            result = ipc_video_play(item->file_path, VIDEO_WIDTH, VIDEO_HEIGHT);
+        }
+    }
     
-    // 重新启动视频帧更新定时器
     ctx->video_frame_timer = lv_timer_create(custom_media_update_video_frame, 33, NULL);
     
     return result >= 0 ? 0 : -1;
@@ -1409,23 +1413,25 @@ int custom_media_play_next_video(void) {
  */
 int custom_media_play_prev_video(void) {
     MediaContext *ctx = get_context();
-    if (!ctx->video_playlist || !ctx->pc) return -1;
+    if (!ctx->video_playlist) return -1;
     
     int count = playlist_get_count(ctx->video_playlist);
     if (count <= 0) return -1;
     
-    // 停止视频帧更新定时器
     if (ctx->video_frame_timer) {
         lv_timer_del(ctx->video_frame_timer);
         ctx->video_frame_timer = NULL;
-        // 短暂等待，确保定时器完全停止
         usleep(50000);
     }
     
-    // 播放上一个
-    int result = player_core_play_prev(ctx->pc);
+    int result = playlist_prev(ctx->video_playlist);
+    if (result >= 0) {
+        PlaylistItem *item = playlist_get_current_item(ctx->video_playlist);
+        if (item) {
+            result = ipc_video_play(item->file_path, VIDEO_WIDTH, VIDEO_HEIGHT);
+        }
+    }
     
-    // 重新启动视频帧更新定时器
     ctx->video_frame_timer = lv_timer_create(custom_media_update_video_frame, 33, NULL);
     
     return result >= 0 ? 0 : -1;
