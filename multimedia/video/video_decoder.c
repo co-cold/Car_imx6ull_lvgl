@@ -24,36 +24,33 @@ static void* vd_thread_fn(void *arg) {
     }
 
     int render_count = 0;
+    double frame_interval = vd->fps > 0 ? (1.0 / vd->fps) : 0.0416;
+    struct timespec last_real_ts = {0, 0};
 
     while (vd->running) {
-        // 检查暂停状态
         while (vd->paused && vd->running) {
             av_usleep(10000);
         }
-        
-        // 检查停止标志（在读取帧之前）
+
         if (!vd->running) break;
-        
-        // 读取帧
+
         int ret = av_read_frame(vd->fmt_ctx, pkt);
         if (ret < 0) {
             if (ret == AVERROR_EOF) break;
             av_packet_unref(pkt);
             continue;
         }
-        
-        // 检查停止标志（在处理帧之前）
+
         if (!vd->running) {
             av_packet_unref(pkt);
             break;
         }
-        
+
         if (pkt->stream_index != vd->video_stream_idx) {
             av_packet_unref(pkt);
             continue;
         }
 
-        // 解码帧
         ret = avcodec_send_packet(vd->codec_ctx, pkt);
         if (ret < 0) {
             av_packet_unref(pkt);
@@ -61,12 +58,11 @@ static void* vd_thread_fn(void *arg) {
         }
 
         while (1) {
-            // 检查是否需要停止
             if (!vd->running) {
                 av_frame_unref(frame);
                 break;
             }
-            
+
             ret = avcodec_receive_frame(vd->codec_ctx, frame);
             if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) break;
             if (ret < 0) {
@@ -74,17 +70,12 @@ static void* vd_thread_fn(void *arg) {
                 break;
             }
 
-            // 不做帧率控制，让视频尽可能快地解码
-            // 显示帧率由LVGL定时器控制
-
-            // 检查是否需要停止
             if (!vd->running) {
                 av_frame_unref(frame);
                 break;
             }
-            
-            // 跳帧：如果上一帧UI还没取走，直接丢弃
-            VideoDoubleBuf *vdb_copy = vd->vdb;  // 获取视频双缓冲区指针的本地副本
+
+            VideoDoubleBuf *vdb_copy = vd->vdb;
             if (!vdb_copy) {
                 LOGD("video_decoder: vdb已释放，退出线程\n");
                 av_frame_unref(frame);
@@ -92,18 +83,15 @@ static void* vd_thread_fn(void *arg) {
             }
             uint8_t *dst = vdb_get_write_buf(vdb_copy);
             if (!dst) {
-                LOGD("video_decoder: buffer full, dropping frame\n");
                 av_frame_unref(frame);
                 continue;
             }
-            
-            // 打印渲染信息（每300帧，减少输出频率）
+
             render_count++;
             if (render_count % 300 == 0) {
                 LOGD("video_decoder: rendered %d frames\n", render_count);
             }
 
-            // 缩放并转换为RGB565格式
             uint8_t *dest[1] = { dst };
             int dst_linesize[1] = { vd->dst_width * 2 };
             sws_scale(vd->sws_ctx,
@@ -111,22 +99,35 @@ static void* vd_thread_fn(void *arg) {
                       0, frame->height,
                       dest, dst_linesize);
 
-            // 提交帧到双缓冲
-            vdb_commit(vdb_copy);
+            double frame_pts = (frame->pts != AV_NOPTS_VALUE)
+                ? frame->pts * av_q2d(vd->fmt_ctx->streams[vd->video_stream_idx]->time_base)
+                : -1.0;
+
+            vdb_commit_with_pts(vdb_copy, frame_pts);
             av_frame_unref(frame);
+
+            if (last_real_ts.tv_sec != 0 || last_real_ts.tv_nsec != 0) {
+                struct timespec now;
+                clock_gettime(CLOCK_MONOTONIC, &now);
+                double wall_elapsed = (now.tv_sec - last_real_ts.tv_sec)
+                    + (now.tv_nsec - last_real_ts.tv_nsec) * 1e-9;
+                if (wall_elapsed < frame_interval && wall_elapsed > 0) {
+                    av_usleep((unsigned int)((frame_interval - wall_elapsed) * 1000000));
+                }
+            }
+            clock_gettime(CLOCK_MONOTONIC, &last_real_ts);
         }
         av_packet_unref(pkt);
     }
 
     av_frame_free(&frame);
     av_packet_free(&pkt);
-    
-    // 设置线程退出标志并发出通知
+
     pthread_mutex_lock(&vd->exit_lock);
     vd->thread_exited = 1;
     pthread_cond_broadcast(&vd->exit_cond);
     pthread_mutex_unlock(&vd->exit_lock);
-    
+
     LOGD("video_decoder: thread exiting for %s\n", vd->file_path);
     return NULL;
 }

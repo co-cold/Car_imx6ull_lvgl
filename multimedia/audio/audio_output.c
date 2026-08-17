@@ -281,10 +281,22 @@ void audio_output_stop(AudioOutput *ao) {
     LOGD("audio_output_stop: 设置running=0\n");
     ao->running = 0;
 
-    /* 关键步骤：唤醒可能阻塞在 rb_read 的播放线程 */
+    /* 关键步骤：唤醒可能阻塞在 rb_read 的播放线程
+     * rb_wakeup_all 只 broadcast 条件变量，但 rb_read 的 while 循环
+     * 检查 rb->count == 0，如果缓冲区为空，线程会重新进入等待。
+     * 因此必须写入数据到缓冲区，让 rb->count > 0，线程才能真正退出阻塞。 */
     LOGD("audio_output_stop: 尝试唤醒阻塞的读取线程\n");
     RingBuffer *rb_copy = ao->rb;  // 获取环形缓冲区指针的本地副本
     if (rb_copy) {
+        // 写入足够的数据唤醒 rb_read（至少1字节即可解除阻塞）
+        int bytes_per_sample = (ao->format == SND_PCM_FORMAT_S32_LE) ? 4 : 2;
+        int frame_bytes = ao->channels * bytes_per_sample;
+        int wakeup_bytes = frame_bytes * 4;  // 写入4帧，确保足够
+        uint8_t *dummy = (uint8_t *)calloc(1, wakeup_bytes);
+        if (dummy) {
+            rb_write(rb_copy, dummy, wakeup_bytes);
+            free(dummy);
+        }
         rb_wakeup_all(rb_copy);
     } else {
         LOGD("audio_output_stop: ao->rb为NULL\n");

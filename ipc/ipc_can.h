@@ -5,7 +5,7 @@
 #include <pthread.h>
 #include <dbus/dbus.h>
 
-#include "can_drv.h"
+#include "obd2_drv.h"
 
 typedef void (*ipc_can_encoder_cb_t)(const Encoder_Data_t *enc, void *user_data);
 

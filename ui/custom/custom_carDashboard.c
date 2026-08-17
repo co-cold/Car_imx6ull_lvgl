@@ -33,10 +33,10 @@ static void dash_timer_cb(lv_timer_t *timer)
 
     /* ── 转速表 (右表) ──
      *    meter 范围: 8 ~ 116
-     *    encoder.count 假设: 0 ~ 12000
-     *    映射: rpm_val = 8 + count * 108 / 12000
+     *    enc.count = OBD-II 实际转速 (RPM), 范围 0 ~ 8000
+     *    映射: rpm_val = 8 + (int)count * 108 / 8000
      */
-    int32_t rpm_val = 8 + (enc.count * 108 / 12000);
+    int32_t rpm_val = 8 + ((int32_t)enc.count * 108 / 8000);
     rpm_val = clamp_arc(rpm_val);
 
     if (ui->screen_carDashboard_meter_rSpeed_scale_0_ndline_0)
@@ -47,7 +47,7 @@ static void dash_timer_cb(lv_timer_t *timer)
         lv_meter_set_indicator_end_value(ui->screen_carDashboard_meter_rSpeed,
             ui->screen_carDashboard_meter_rSpeed_scale_0_arc_0, clamp_arc(rpm_val));
 
-    /* 转速数字 (count → xxx 转/分) */
+    /* 转速数字 */
     if (ui->screen_carDashboard_label_speedNum1) {
         char buf[16];
         snprintf(buf, sizeof(buf), "%d", enc.count);
@@ -56,10 +56,10 @@ static void dash_timer_cb(lv_timer_t *timer)
 
     /* ── 车速表 (左表) ──
      *    meter 范围: 8 ~ 108
-     *    enc.speed_rpm 假设: 0.0 ~ 120.0 km/h
-     *    映射: spd_val = 8 + (int)(speed_rpm * 100 / 120)
+     *    enc.speed_rpm = OBD-II 实际车速 (km/h), 范围 0 ~ 240
+     *    映射: spd_val = 8 + (int)(speed * 100 / 240)
      */
-    int32_t spd_val = 8 + (int32_t)(enc.speed_rpm * 100.0f / 120.0f);
+    int32_t spd_val = 8 + (int32_t)(enc.speed_rpm * 100.0f / 240.0f);
     spd_val = clamp_arc(spd_val);
 
     if (ui->screen_carDashboard_meter_cSpeed_scale_0_ndline_0)

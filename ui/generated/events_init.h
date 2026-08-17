@@ -25,6 +25,11 @@ void events_init(lv_ui *ui);
 
 void events_init_screen_home(lv_ui *ui);
 void events_init_screen_cam(lv_ui *ui);
+void events_init_screen_weather(lv_ui *ui);
+void events_init_screen_music(lv_ui *ui);
+void events_init_screen_clock(lv_ui *ui);
+void events_init_screen_video(lv_ui *ui);
+void events_init_screen_carDashboard(lv_ui *ui);
 
 #ifdef __cplusplus
 }

@@ -59,6 +59,8 @@ void setup_scr_screen_video(lv_ui *ui)
     lv_obj_set_style_img_opa(ui->screen_video_img_video, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(ui->screen_video_img_video, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_clip_corner(ui->screen_video_img_video, true, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui->screen_video_img_video, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui->screen_video_img_video, lv_color_hex(0x000000), LV_PART_MAIN|LV_STATE_DEFAULT);
 
     //Write codes screen_video_cont_videoCtrl
     ui->screen_video_cont_videoCtrl = lv_obj_create(ui->screen_video);

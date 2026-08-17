@@ -144,18 +144,20 @@ int player_core_play_video(PlayerCore *pc, const char *file_path,
     // 先启动视频解码器
     video_decoder_start(pc->vd);
     
-    // 等待视频解码器解码出第一帧（最多等待500ms）
+    // 等待视频解码器解码出第一帧（最多等待500ms），不释放，留给后续显示
     int wait_count = 0;
     while (wait_count < 50) {
         uint8_t *buf = vdb_get_ready_buf(pc->vdb);
         if (buf) {
-            vdb_release(pc->vdb); // 释放缓冲区
             break;
         }
         usleep(10000); // 等待10ms
         wait_count++;
     }
     LOGD("video ready after %d ms\n", wait_count * 10);
+
+    // 重置环形缓冲区，清除上一个视频的残留音频数据
+    rb_reset(pc->rb);
 
     // 初始化音频解码器和输出
     pc->ad = audio_decoder_init(file_path, pc->rb);
@@ -334,6 +336,12 @@ uint8_t* player_core_get_video_frame(PlayerCore *pc) {
     if (!pc) return NULL;
     if (!pc->vdb) return NULL;
     return vdb_get_ready_buf(pc->vdb);
+}
+
+uint8_t* player_core_get_video_frame_at_time(PlayerCore *pc, double audio_time) {
+    if (!pc) return NULL;
+    if (!pc->vdb) return NULL;
+    return vdb_get_ready_buf_at_time(pc->vdb, audio_time);
 }
 
 void player_core_release_video_frame(PlayerCore *pc) {

@@ -471,6 +471,8 @@ void custom_close_Ctimer()
         lv_timer_del(screen_clock_timer);
         screen_clock_timer = NULL;
     }
+    Gclock_analog = NULL;
+    Gclock_digital = NULL;
 }
 
 void custom_set_Aclock(lv_obj_t *clock)
@@ -481,4 +483,11 @@ void custom_set_Aclock(lv_obj_t *clock)
 void custom_set_Dclock(lv_obj_t *clock)
 {
     Gclock_digital = clock;
+}
+
+void custom_reset_clock_ptrs(void)
+{
+    Gclock = NULL;
+    Gclock_analog = NULL;
+    Gclock_digital = NULL;
 }

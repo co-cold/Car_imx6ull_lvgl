@@ -42,12 +42,22 @@ static void emit_frame_ready(void)
     dbus_message_unref(msg);
 }
 
+static void emit_playback_complete(void)
+{
+    DBusMessage *msg = dbus_message_new_signal(
+        OBJECT_PATH, INTERFACE_NAME, "PlaybackComplete");
+    if (!msg) return;
+    dbus_connection_send(g_conn, msg, NULL);
+    dbus_connection_flush(g_conn);
+    dbus_message_unref(msg);
+    printf("[media_service] PlaybackComplete signal emitted\n");
+}
+
 static int init_shared_memory(int width, int height)
 {
-    g_video_width  = width;
-    g_video_height = height;
-    g_frame_size   = width * height * 2;
+    int new_frame_size = width * height * 2;
 
+    /* 先解除旧映射，关闭旧fd，但 ***不*** shm_unlink */
     if (g_shm_ptr && g_shm_ptr != MAP_FAILED) {
         munmap(g_shm_ptr, g_frame_size);
         g_shm_ptr = NULL;
@@ -56,12 +66,20 @@ static int init_shared_memory(int width, int height)
         close(g_shm_fd);
         g_shm_fd = -1;
     }
-    shm_unlink(SHM_NAME);
 
-    g_shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0666);
+    g_video_width  = width;
+    g_video_height = height;
+    g_frame_size   = new_frame_size;
+
+    /* 尝试打开已有的共享内存（不 unlink，复用同一对象） */
+    g_shm_fd = shm_open(SHM_NAME, O_RDWR, 0666);
     if (g_shm_fd < 0) {
-        perror("[media_service] shm_open");
-        return -1;
+        /* 首次创建 */
+        g_shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0666);
+        if (g_shm_fd < 0) {
+            perror("[media_service] shm_open");
+            return -1;
+        }
     }
 
     if (ftruncate(g_shm_fd, g_frame_size) < 0) {
@@ -81,7 +99,7 @@ static int init_shared_memory(int width, int height)
     }
 
     memset(g_shm_ptr, 0, g_frame_size);
-    printf("[media_service] shared memory created: %s, size=%d\n",
+    printf("[media_service] shared memory ready: %s, size=%d\n",
            SHM_NAME, g_frame_size);
     return 0;
 }
@@ -171,6 +189,17 @@ static DBusHandlerResult method_handler(DBusConnection *conn,
         reply = dbus_message_new_method_return(msg);
         dbus_message_append_args(reply, DBUS_TYPE_DOUBLE, &vol, DBUS_TYPE_INVALID);
     }
+    else if (strcmp(method, "GetPlaybackInfo") == 0) {
+        dbus_int32_t state = g_pc ? player_core_get_state(g_pc) : 0;
+        double pos = g_pc ? player_core_get_position(g_pc) : 0.0;
+        double dur = g_pc ? player_core_get_duration(g_pc) : 0.0;
+        reply = dbus_message_new_method_return(msg);
+        dbus_message_append_args(reply,
+            DBUS_TYPE_INT32, &state,
+            DBUS_TYPE_DOUBLE, &pos,
+            DBUS_TYPE_DOUBLE, &dur,
+            DBUS_TYPE_INVALID);
+    }
     else {
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
     }
@@ -234,16 +263,27 @@ int main(int argc, char *argv[])
 
     printf("[media_service] D-Bus service registered: %s\n", SERVICE_NAME);
 
+    int prev_audio_state = 0;
+
     while (g_running) {
         dbus_connection_read_write_dispatch(g_conn, 0);
 
         if (g_pc && g_video_mode && g_shm_ptr) {
-            uint8_t *frame = player_core_get_video_frame(g_pc);
+            double audio_time = player_core_get_position(g_pc);
+            uint8_t *frame = player_core_get_video_frame_at_time(g_pc, audio_time);
             if (frame) {
                 memcpy(g_shm_ptr, frame, g_frame_size);
                 player_core_release_video_frame(g_pc);
                 emit_frame_ready();
             }
+        }
+
+        if (g_pc && !g_video_mode) {
+            int cur_state = player_core_get_state(g_pc);
+            if (prev_audio_state == 1 && cur_state == 0) {
+                emit_playback_complete();
+            }
+            prev_audio_state = cur_state;
         }
 
         usleep(30000);

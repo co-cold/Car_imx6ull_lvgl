@@ -58,8 +58,10 @@ typedef struct {
     char *description;        // 描述信息
     
     // 封面图片
-    uint8_t *cover_data;      // 封面图片数据
-    size_t cover_size;        // 封面数据大小
+    uint8_t *cover_data;      // 封面图片数据（解码后的 RGB565 像素）
+    size_t cover_size;        // 封面数据大小（字节）
+    int cover_w;              // 封面宽度
+    int cover_h;              // 封面高度
 } MediaMetadata;
 
 int media_metadata_parse(const char *file_path, MediaMetadata *info);

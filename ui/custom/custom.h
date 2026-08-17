@@ -38,6 +38,7 @@ void custom_close_Htimer();
 void custom_close_Ctimer();
 void custom_set_Aclock(lv_obj_t *clock);
 void custom_set_Dclock(lv_obj_t *clock);
+void custom_reset_clock_ptrs(void);
 
 #ifdef __cplusplus
 }

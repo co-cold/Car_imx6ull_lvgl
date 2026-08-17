@@ -5,6 +5,8 @@
 #include <libgen.h>
 #include "libavformat/avformat.h"
 #include "libavcodec/avcodec.h"
+#include "libswscale/swscale.h"
+#include "libavutil/imgutils.h"
 #include "../utils/debug.h"
 
 char* media_metadata_format_duration_short(int64_t duration_ms, char *buf, size_t buf_size) {
@@ -20,6 +22,128 @@ char* media_metadata_format_duration_short(int64_t duration_ms, char *buf, size_
         snprintf(buf, buf_size, "%d:%02d", minutes, seconds);
     }
     return buf;
+}
+
+/**
+ * @brief 将 JPEG/PNG 编码的封面数据解码为 RGB565 像素
+ * 解码成功后，原 cover_data 被释放，替换为 RGB565 像素数据
+ */
+static void decode_cover_to_rgb565(MediaMetadata *info)
+{
+    if (!info->cover_data || info->cover_size == 0) return;
+
+    const uint8_t *raw = info->cover_data;
+    size_t raw_size = info->cover_size;
+
+    /* 创建内存 IO 上下文 */
+    AVIOContext *avio = avio_alloc_context(
+        (uint8_t *)av_malloc(raw_size), (int)raw_size,
+        0, NULL, NULL, NULL, NULL);
+    if (!avio) return;
+    memcpy(avio->buffer, raw, raw_size);
+
+    AVFormatContext *fmt = avformat_alloc_context();
+    fmt->pb = avio;
+
+    if (avformat_open_input(&fmt, "", NULL, NULL) < 0) {
+        avformat_close_input(&fmt);
+        return;
+    }
+
+    if (avformat_find_stream_info(fmt, NULL) < 0) {
+        avformat_close_input(&fmt);
+        return;
+    }
+
+    /* 找到视频流 */
+    int vs = -1;
+    for (int i = 0; i < (int)fmt->nb_streams; i++) {
+        if (fmt->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+            vs = i;
+            break;
+        }
+    }
+    if (vs < 0) {
+        avformat_close_input(&fmt);
+        return;
+    }
+
+    AVCodecParameters *cp = fmt->streams[vs]->codecpar;
+    const AVCodec *codec = avcodec_find_decoder(cp->codec_id);
+    if (!codec) {
+        avformat_close_input(&fmt);
+        return;
+    }
+
+    AVCodecContext *cctx = avcodec_alloc_context3(codec);
+    avcodec_parameters_to_context(cctx, cp);
+    if (avcodec_open2(cctx, codec, NULL) < 0) {
+        avcodec_free_context(&cctx);
+        avformat_close_input(&fmt);
+        return;
+    }
+
+    /* 解码一帧 */
+    AVPacket pkt;
+    AVFrame *frame = av_frame_alloc();
+    int got_frame = 0;
+
+    while (av_read_frame(fmt, &pkt) >= 0) {
+        if (pkt.stream_index == vs) {
+            avcodec_send_packet(cctx, &pkt);
+            if (avcodec_receive_frame(cctx, frame) == 0) {
+                got_frame = 1;
+                av_packet_unref(&pkt);
+                break;
+            }
+        }
+        av_packet_unref(&pkt);
+    }
+
+    if (!got_frame) {
+        av_frame_free(&frame);
+        avcodec_free_context(&cctx);
+        avformat_close_input(&fmt);
+        return;
+    }
+
+    /* 转换为 RGB565 */
+    int dw = frame->width;
+    int dh = frame->height;
+    int rgb565_size = dw * dh * 2;
+    uint8_t *rgb565 = (uint8_t *)av_malloc(rgb565_size);
+    if (!rgb565) {
+        av_frame_free(&frame);
+        avcodec_free_context(&cctx);
+        avformat_close_input(&fmt);
+        return;
+    }
+
+    enum AVPixelFormat src_fmt = cctx->pix_fmt != AV_PIX_FMT_NONE ? cctx->pix_fmt : AV_PIX_FMT_YUV420P;
+    struct SwsContext *sws = sws_getContext(
+        dw, dh, src_fmt,
+        dw, dh, AV_PIX_FMT_RGB565LE,
+        SWS_BILINEAR, NULL, NULL, NULL);
+    if (sws) {
+        uint8_t *dst_planes[4] = { rgb565, NULL, NULL, NULL };
+        int dst_linesize[4] = { dw * 2, 0, 0, 0 };
+        sws_scale(sws, (const uint8_t *const *)frame->data, frame->linesize,
+                  0, dh, dst_planes, dst_linesize);
+        sws_freeContext(sws);
+    }
+
+    av_frame_free(&frame);
+    avcodec_free_context(&cctx);
+    avformat_close_input(&fmt);
+
+    /* 替换原数据 */
+    free(info->cover_data);
+    info->cover_data = rgb565;
+    info->cover_size = rgb565_size;
+    info->cover_w = dw;
+    info->cover_h = dh;
+
+    LOGD("media_metadata: cover decoded to RGB565 %dx%d, size=%d\n", dw, dh, rgb565_size);
 }
 
 int media_metadata_parse(const char *file_path, MediaMetadata *info) {
@@ -224,7 +348,10 @@ int media_metadata_parse(const char *file_path, MediaMetadata *info) {
             }
         }
     }
-    
+
+    /* 解码封面为 RGB565 */
+    decode_cover_to_rgb565(info);
+
     free(dup);
     avformat_close_input(&fmt_ctx);
     return 0;

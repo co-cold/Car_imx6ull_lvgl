@@ -22,8 +22,10 @@ typedef struct {
     char *artist;         // 艺术家（音频）
     char *album;          // 专辑（音频）
     int64_t duration_ms;  // 时长（毫秒）
-    uint8_t *cover_data;  // 封面数据（音频）
+    uint8_t *cover_data;  // 封面数据（解码后的 RGB565 像素）
     size_t cover_size;    // 封面大小
+    int cover_w;          // 封面宽度
+    int cover_h;          // 封面高度
 } PlaylistItem;
 
 // 播放列表

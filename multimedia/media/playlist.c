@@ -104,8 +104,10 @@ int playlist_add(Playlist *pl, const char *file_path) {
             item->cover_data = malloc(meta.cover_size);
             memcpy(item->cover_data, meta.cover_data, meta.cover_size);
             item->cover_size = meta.cover_size;
+            item->cover_w = meta.cover_w;
+            item->cover_h = meta.cover_h;
         }
-        
+
         media_metadata_free(&meta);
     } else {
         // 视频：提取文件名作为标题
@@ -113,7 +115,7 @@ int playlist_add(Playlist *pl, const char *file_path) {
         const char *name = slash ? slash + 1 : file_path;
         item->title = strdup(name);
     }
-    
+
     LOGD("added %s at index %d\n", file_path, pl->count);
     return pl->count++;
 }
@@ -165,6 +167,8 @@ int playlist_update(Playlist *pl, int idx, const char *file_path) {
             pl->items[idx].cover_data = malloc(meta.cover_size);
             memcpy(pl->items[idx].cover_data, meta.cover_data, meta.cover_size);
             pl->items[idx].cover_size = meta.cover_size;
+            pl->items[idx].cover_w = meta.cover_w;
+            pl->items[idx].cover_h = meta.cover_h;
         }
         
         media_metadata_free(&meta);

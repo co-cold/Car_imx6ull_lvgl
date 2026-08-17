@@ -120,9 +120,8 @@ file(GLOB_RECURSE GENERATED_SOURCES "${PROJECT_SOURCE_DIR}/ui/generated/*.c")
 file(GLOB_RECURSE DCLOCK_SOURCES "${PROJECT_SOURCE_DIR}/ui/Edclock/*.c")
 file(GLOB_RECURSE ANALOGDCLOCK_SOURCES "${PROJECT_SOURCE_DIR}/ui/Eanalogclock/*.c")
 file(GLOB_RECURSE KEYBOARD_SOURCES "${PROJECT_SOURCE_DIR}/ui/Ekeyboard/*.c")
-# 设备（can_drv 归 can_service 进程使用，UI 进程只用 camera）
+# 设备（camera）
 set(DEV_SOURCES "${PROJECT_SOURCE_DIR}/dev/camera_hardware.c")
-set(CAN_DRV_SOURCES "${PROJECT_SOURCE_DIR}/dev/can_drv.c")
 # IPC 层源文件
 file(GLOB_RECURSE IPC_SOURCES "${PROJECT_SOURCE_DIR}/ipc/*.c")
 
@@ -162,13 +161,13 @@ target_link_libraries(lvgl_demo
                         rt                 # 共享内存（shm_open）
                      )
 
-################## CAN 服务进程 ###################
-add_executable(can_service
-    services/can_service.c
-    ${CAN_DRV_SOURCES}
+################## OBD-II 服务进程 ###################
+add_executable(obd2_service
+    services/obd2_service.c
+    dev/obd2_drv.c
 )
 
-target_link_libraries(can_service PRIVATE
+target_link_libraries(obd2_service PRIVATE
     pthread
     dbus-1
 )

@@ -18,6 +18,7 @@
 
 #include "ipc/ipc_can.h"
 #include "ipc/ipc_camera.h"
+#include "ipc/ipc_media.h"
 
 #define CAN_BUS_ADDRESS "unix:path=/tmp/lvgl-dbus-session"
 
@@ -66,15 +67,15 @@ int lvgl_init()
     // lv_indev_set_cursor(mouse_indev, cursor_obj);             /*Connect the image  object to the driver*/
 }
 
-static void launch_can_service(void)
+static void launch_obd2_service(void)
 {
     pid_t pid = fork();
     if (pid == 0) {
-        execl("./can_service", "can_service", NULL);
-        perror("execl can_service");
+        execl("./obd2_service", "obd2_service", NULL);
+        perror("execl obd2_service");
         _exit(1);
     } else if (pid > 0) {
-        printf("[main] can_service launched, pid=%d\n", pid);
+        printf("[main] obd2_service launched, pid=%d\n", pid);
     } else {
         perror("fork");
     }
@@ -98,10 +99,10 @@ int main(int argc, char *argv[])
 
     signal(SIGCHLD, reap_child);
 
-    launch_can_service();
+    launch_obd2_service();
 
     if (ipc_can_init(CAN_BUS_ADDRESS, on_encoder_update, NULL) != 0) {
-        fprintf(stderr, "[main] IPC CAN init failed, running without CAN\n");
+        fprintf(stderr, "[main] IPC CAN init failed, running without OBD-II\n");
     }
 
     /* Initialize extra libraries (PNG, JPEG, etc.) */
@@ -117,6 +118,7 @@ int main(int argc, char *argv[])
         lv_timer_handler();
         ipc_can_dispatch(0);
         ipc_camera_dispatch(0);
+        ipc_media_dispatch(0);
         usleep(5000);
     }
 

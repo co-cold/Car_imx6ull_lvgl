@@ -36,7 +36,7 @@ void setup_scr_screen_cam(lv_ui *ui)
     lv_obj_set_style_border_width(ui->screen_cam_cont_cam, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(ui->screen_cam_cont_cam, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui->screen_cam_cont_cam, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui->screen_cam_cont_cam, lv_color_hex(0xffffff), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui->screen_cam_cont_cam, lv_color_hex(0x070707), LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_grad_dir(ui->screen_cam_cont_cam, LV_GRAD_DIR_NONE, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_pad_top(ui->screen_cam_cont_cam, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_pad_bottom(ui->screen_cam_cont_cam, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
@@ -83,6 +83,8 @@ void setup_scr_screen_cam(lv_ui *ui)
     lv_obj_set_style_img_opa(ui->screen_cam_img_video, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(ui->screen_cam_img_video, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_clip_corner(ui->screen_cam_img_video, true, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui->screen_cam_img_video, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui->screen_cam_img_video, lv_color_hex(0x000000), LV_PART_MAIN|LV_STATE_DEFAULT);
 
     //Write codes screen_cam_ddlist_device
     ui->screen_cam_ddlist_device = lv_dropdown_create(ui->screen_cam_cont_cam);

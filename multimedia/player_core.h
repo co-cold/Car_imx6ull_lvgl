@@ -110,6 +110,14 @@ float player_core_get_volume(PlayerCore *pc);
 uint8_t* player_core_get_video_frame(PlayerCore *pc);
 
 /**
+ * @brief 获取与音频时间匹配的视频帧（用于音画同步）
+ * @param pc         播放器核心实例
+ * @param audio_time 当前音频播放时间（秒）
+ * @return 视频帧缓冲区指针，若当前帧 PTS 超前于音频则返回 NULL
+ */
+uint8_t* player_core_get_video_frame_at_time(PlayerCore *pc, double audio_time);
+
+/**
  * @brief 释放已获取的视频帧，允许解码器写入新帧
  * @param pc 播放器核心实例
  */

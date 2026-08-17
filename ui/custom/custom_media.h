@@ -2,6 +2,7 @@
 #define CUSTOM_MEDIA_H
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include "gui_guider.h"
 #include "media/playlist.h"
@@ -17,9 +18,42 @@
 #define LOGD(fmt, ...)
 #endif
 
+// 配置常量
+#define MAX_SONGS 50
+#define MAX_VIDEOS 20
+#define MAX_LYRICS_LINES 200
+#define LYRICS_DISPLAY_LINES 5
+#define LYRICS_FONT_SIZE_NORMAL 16
+#define LYRICS_FONT_SIZE_HIGHLI 24
+#define VIDEO_WIDTH 800
+#define VIDEO_HEIGHT 450
+
+#define BUS_ADDRESS "unix:path=/tmp/lvgl-dbus-session"
+
+// 媒体播放上下文结构体
+typedef struct {
+    lv_ui *ui;
+    lv_timer_t *progress_timer;
+    lv_timer_t *video_frame_timer;
+    Playlist *audio_playlist;
+    Playlist *video_playlist;
+    int play_mode;
+    char *lyrics[MAX_LYRICS_LINES];
+    double lyrics_time[MAX_LYRICS_LINES];
+    int lyrics_count;
+    int current_lyric_idx;
+    bool playback_just_finished;
+    double last_pos;
+    volatile bool is_deinitializing;
+} MediaContext;
+
+// 获取全局上下文
+MediaContext* custom_media_get_context(void);
+
 // 前向声明
 
 void custom_media_init(lv_ui *ui);
+void custom_media_cleanup_screen(void);
 void custom_media_deinit(void);
 
 int custom_media_play_audio(const char *file);
@@ -119,6 +153,13 @@ void custom_media_stop_progress_update(void);
 // 获取播放列表指针（供UI更新使用）
 Playlist* custom_media_get_audio_playlist(void);
 Playlist* custom_media_get_video_playlist(void);
+
+// ========== 模块初始化函数 ==========
+
+void custom_media_init_music(void);
+void custom_media_init_video(void);
+
+int custom_media_get_play_mode(void);
 
 // ========== 列表 UI 初始化函数 ==========
 

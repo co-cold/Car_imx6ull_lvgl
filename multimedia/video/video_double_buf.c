@@ -51,11 +51,10 @@ uint8_t* vdb_get_write_buf(VideoDoubleBuf *vdb) {
     return ret;
 }
 
-void vdb_commit(VideoDoubleBuf *vdb) {
+void vdb_commit_with_pts(VideoDoubleBuf *vdb, double pts) {
     pthread_mutex_lock(&vdb->lock);
     if (!vdb->stopped) {
-        // 强制更新 ready_idx，即使 ui_busy
-        // 这样可以确保最新的帧总是可用，避免画面卡住
+        vdb->pts[vdb->write_idx] = pts;
         vdb->ready_idx = vdb->write_idx;
         vdb->write_idx ^= 1;
         vdb->ui_busy = 1;
@@ -84,10 +83,28 @@ void vdb_release(VideoDoubleBuf *vdb) {
         pthread_mutex_unlock(&vdb->lock);
         return;
     }
-    // 总是重置 ui_busy，确保解码器可以继续写入新帧
     vdb->ui_busy = 0;
     if (vdb->ready_idx >= 0) {
         vdb->ready_idx = -1;
     }
     pthread_mutex_unlock(&vdb->lock);
+}
+
+uint8_t* vdb_get_ready_buf_at_time(VideoDoubleBuf *vdb, double audio_time) {
+    uint8_t *ret = NULL;
+    pthread_mutex_lock(&vdb->lock);
+    if (vdb->stopped) {
+        pthread_mutex_unlock(&vdb->lock);
+        return NULL;
+    }
+    if (vdb->ready_idx >= 0) {
+        double pts = vdb->pts[vdb->ready_idx];
+        if (pts < 0) {
+            ret = vdb->buf[vdb->ready_idx];
+        } else if (pts <= audio_time + 0.5) {
+            ret = vdb->buf[vdb->ready_idx];
+        }
+    }
+    pthread_mutex_unlock(&vdb->lock);
+    return ret;
 }
