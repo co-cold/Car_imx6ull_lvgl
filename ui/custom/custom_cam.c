@@ -161,9 +161,9 @@ void camera_ui_deinit(camera_ui_t *camera_ui) {
         camera_ui_stop(camera_ui);
     }
     
-    // 3. 清理LVGL图片源
+    // 3. 清理LVGL图片源，设置占位图避免白屏
     if (camera_ui->display_img) {
-        lv_img_set_src(camera_ui->display_img, NULL);
+        lv_img_set_src(camera_ui->display_img, &_noVideo_alpha_800x450);
         camera_ui->display_img = NULL;
         printf("已清除LVGL图片源\n");
     }
