@@ -105,18 +105,12 @@ camera_ui_t* camera_ui_init(lv_obj_t *display_img, const char *device, int width
     // 初始化为黑色
     memset(camera_ui->display_buffer, 0, camera_ui->buffer_size);
     
-    // 设置图片源
+    // 设置canvas并恢复显示（deinit时隐藏了）
     camera_ui->display_img = display_img;
+    lv_obj_clear_flag(display_img, LV_OBJ_FLAG_HIDDEN);
     
-    // 初始化图片描述符
-    camera_ui->img_desc.header.cf = LV_IMG_CF_TRUE_COLOR;  // RGB565
-    camera_ui->img_desc.header.w = width;
-    camera_ui->img_desc.header.h = height;
-    camera_ui->img_desc.data_size = camera_ui->buffer_size;
-    camera_ui->img_desc.data = camera_ui->display_buffer;
-    
-    // 设置图片源
-    lv_img_set_src(display_img, &camera_ui->img_desc);
+    // 为canvas设置缓冲区，直接操作像素数据
+    lv_canvas_set_buffer(display_img, camera_ui->display_buffer, width, height, LV_IMG_CF_TRUE_COLOR);
     
     // 创建显示更新定时器
     camera_ui->update_timer = lv_timer_create(camera_display_timer_cb, 30, camera_ui); 
@@ -161,31 +155,35 @@ void camera_ui_deinit(camera_ui_t *camera_ui) {
         camera_ui_stop(camera_ui);
     }
     
-    // 3. 清理LVGL图片源，设置占位图避免白屏
+    // 3. 先隐藏canvas，避免后续LVGL刷新访问已释放的缓冲区
     if (camera_ui->display_img) {
-        lv_img_set_src(camera_ui->display_img, &_noVideo_alpha_800x450);
-        camera_ui->display_img = NULL;
-        printf("已清除LVGL图片源\n");
+        lv_obj_add_flag(camera_ui->display_img, LV_OBJ_FLAG_HIDDEN);
+        printf("已隐藏canvas\n");
     }
-    
-    // 4. 释放缓冲区
+
+    // 4. 释放缓冲区（必须在隐藏canvas之后）
     if (camera_ui->display_buffer) {
         free(camera_ui->display_buffer);
         camera_ui->display_buffer = NULL;
     }
     
-    // 5. 记录并清除全局变量
+    // 5. 清空canvas引用
+    camera_ui->display_img = NULL;
+
+    // 6. 记录状态（free前必须保存）
     camera_ui_state_t old_state = camera_ui->state;
-    
+
     if (cam_ui == camera_ui) {
         cam_ui = NULL;
         printf("已清除全局变量cam_ui\n");
     }
-    
-    // 6. IPC 反初始化
+
+    free(camera_ui);
+
+    // 7. IPC 反初始化
     ipc_camera_deinit();
 
-    // 7. 杀掉 camera_service 进程
+    // 8. 杀掉 camera_service 进程
     if (g_camera_svc_pid > 0) {
         kill(g_camera_svc_pid, SIGKILL);
         int retries = 20;
@@ -201,10 +199,8 @@ void camera_ui_deinit(camera_ui_t *camera_ui) {
         g_camera_svc_pid = 0;
     }
 
-    // 8. 最后释放结构体
-    free(camera_ui);
-    
-    printf("摄像头UI已反初始化，之前状态=%s\n", camera_ui_state_to_string(old_state));
+    printf("摄像头UI反初始化完成 (状态=%s)\n",
+           camera_ui_state_to_string(old_state));
 }
 
 // 启动摄像头UI

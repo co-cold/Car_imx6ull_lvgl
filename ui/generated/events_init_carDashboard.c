@@ -23,7 +23,7 @@ static void screen_carDashboard_event_handler (lv_event_t *e)
         case LV_DIR_TOP:
         {
             lv_indev_wait_release(lv_indev_get_act());
-            ui_load_scr_animation(&guider_ui, &guider_ui.screen_home, guider_ui.screen_home_del, &guider_ui.screen_carDashboard_del, setup_scr_screen_home, LV_SCR_LOAD_ANIM_MOVE_LEFT, 200, 200, false, true);
+            ui_load_scr_animation(&guider_ui, &guider_ui.screen_home, guider_ui.screen_home_del, &guider_ui.screen_carDashboard_del, setup_scr_screen_home, LV_SCR_LOAD_ANIM_MOVE_LEFT, 200, 200, false, false);
             break;
         }
         default:

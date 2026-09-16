@@ -71,16 +71,11 @@ void setup_scr_screen_cam(lv_ui *ui)
     lv_obj_set_style_text_align(ui->screen_cam_btn_close, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
 
     //Write codes screen_cam_img_video
-    ui->screen_cam_img_video = lv_img_create(ui->screen_cam_cont_cam);
-    lv_obj_add_flag(ui->screen_cam_img_video, LV_OBJ_FLAG_CLICKABLE);
-    lv_img_set_pivot(ui->screen_cam_img_video, 50,50);
-    lv_img_set_angle(ui->screen_cam_img_video, 0);
+    ui->screen_cam_img_video = lv_canvas_create(ui->screen_cam_cont_cam);
     lv_obj_set_pos(ui->screen_cam_img_video, 0, 0);
     lv_obj_set_size(ui->screen_cam_img_video, 640, 480);
 
     //Write style for screen_cam_img_video, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
-    lv_obj_set_style_img_recolor_opa(ui->screen_cam_img_video, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_img_opa(ui->screen_cam_img_video, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(ui->screen_cam_img_video, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_clip_corner(ui->screen_cam_img_video, true, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui->screen_cam_img_video, 255, LV_PART_MAIN|LV_STATE_DEFAULT);

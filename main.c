@@ -20,6 +20,9 @@
 #include "ipc/ipc_camera.h"
 #include "ipc/ipc_media.h"
 
+#define CUSTOM_MEM_TRACE_ENABLE 1
+#include "ui/custom/custom_mem_trace.h"
+
 #define CAN_BUS_ADDRESS "unix:path=/tmp/lvgl-dbus-session"
 
 lv_ui guider_ui;                        // 声明GUI Guider生成的UI结构体实例
@@ -96,6 +99,8 @@ static void on_encoder_update(const Encoder_Data_t *enc, void *user_data)
 int main(int argc, char *argv[])
 {
     lvgl_init();
+
+    mem_trace_init();
 
     signal(SIGCHLD, reap_child);
 

@@ -13,6 +13,7 @@
  *********************/
 #include <stdio.h>
 #include "lvgl.h"
+#include "custom_mem_trace.h"
 #include "custom.h"
 #include "custom_font.h"
 
@@ -38,10 +39,18 @@ static lv_obj_t *Gclock = NULL;
  * Create a demo application
  */
 
+static void mem_leak_check_timer_cb(lv_timer_t *timer)
+{
+    (void)timer;
+    mem_trace_stats();
+}
+
 void custom_init(lv_ui *ui)
 {
     /* Add your codes here */
     custom_font_init("/home/debian/font/SourceHanSerifSC-Regular.otf", 16);
+
+    lv_timer_create(mem_leak_check_timer_cb, 30000, NULL);
 }
 
 void custom_top_init(lv_ui *ui)

@@ -16,7 +16,6 @@ typedef enum {
 // 摄像头UI管理器
 typedef struct {
     lv_obj_t *display_img;
-    lv_img_dsc_t img_desc;
     lv_timer_t *update_timer;
     
     uint8_t *display_buffer;

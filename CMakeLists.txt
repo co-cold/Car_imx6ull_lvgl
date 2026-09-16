@@ -12,8 +12,8 @@ set(CMAKE_C_COMPILER /opt/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf/bi
 # 指定C++交叉编译器路径，使用arm-linux-gnueabihf-g++为IMX6ULL开发板编译C++代码，如果没有使用C++，此行以及下面的CXX规则可以去掉
 set(CMAKE_CXX_COMPILER /opt/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf-g++)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O2")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O2")
 
 # 此处用于定义项目的基本信息，我仅定义项目名称为GUI_LVGL_IMX6ULL，标识当前是针对IMX6ULL的LVGL GUI项目
 project(LVGL_DEMO)
