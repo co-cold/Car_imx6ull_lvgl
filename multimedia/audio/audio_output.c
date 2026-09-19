@@ -93,62 +93,6 @@ static void* ao_thread_fn(void *arg) {
     return NULL;
 }
 
-/* ---------- 尝试打开并设置 mixer（支持多种常见控件名称） ---------- */
-static int audio_output_init_mixer(AudioOutput *ao) {
-    const char *ctrl_names[] = {"Master", "PCM", "Headphone", "Speaker", "Playback", NULL};
-    int ret;
-    
-    // 打开 mixer
-    ret = snd_mixer_open(&ao->mixer, 0);
-    if (ret < 0) {
-        LOGE("音频输出: snd_mixer_open 失败: %s\n", snd_strerror(ret));
-        return -1;
-    }
-    
-    // 附加默认声卡
-    ret = snd_mixer_attach(ao->mixer, "default");
-    if (ret < 0) {
-        LOGE("音频输出: snd_mixer_attach 失败: %s\n", snd_strerror(ret));
-        snd_mixer_close(ao->mixer);
-        ao->mixer = NULL;
-        return -1;
-    }
-    
-    // 注册元素类型
-    snd_mixer_selem_register(ao->mixer, NULL, NULL);
-    
-    // 加载 mixer 元素
-    ret = snd_mixer_load(ao->mixer);
-    if (ret < 0) {
-        LOGE("音频输出: snd_mixer_load 失败: %s\n", snd_strerror(ret));
-        snd_mixer_close(ao->mixer);
-        ao->mixer = NULL;
-        return -1;
-    }
-    
-    // 尝试查找音量控件（按优先级顺序）
-    for (int i = 0; ctrl_names[i]; i++) {
-        snd_mixer_selem_id_t *sid;
-        snd_mixer_selem_id_alloca(&sid);
-        snd_mixer_selem_id_set_name(sid, ctrl_names[i]);
-        ao->elem = snd_mixer_find_selem(ao->mixer, sid);
-        
-        if (ao->elem) {
-            // 获取音量范围
-            snd_mixer_selem_get_playback_volume_range(ao->elem, &ao->vol_min, &ao->vol_max);
-            LOGD("音频输出: 找到混音器控制 '%s', 音量范围=[%ld, %ld]\n", 
-                 ctrl_names[i], ao->vol_min, ao->vol_max);
-            return 0;
-        }
-    }
-    
-    // 未找到可用控件，关闭 mixer
-    LOGE("音频输出: 未找到合适的混音器控制\n");
-    snd_mixer_close(ao->mixer);
-    ao->mixer = NULL;
-    return -1;
-}
-
 /* ---------- 公开接口实现 ---------- */
 
 AudioOutput* audio_output_init(unsigned int sample_rate, int channels,
@@ -219,25 +163,12 @@ AudioOutput* audio_output_init(unsigned int sample_rate, int channels,
     }
     snd_pcm_hw_params_free(hw_params);
 
-    ao->volume = 0.7f;  // 默认音量为 70%（避免声音太大）
-    
-    // 初始化线程退出同步机制
     pthread_mutex_init(&ao->exit_lock, NULL);
     pthread_cond_init(&ao->exit_cond, NULL);
     ao->thread_exited = 0;
-    
-    // 尝试初始化硬件 mixer（失败不影响音频播放，降级为软件音量）
-    audio_output_init_mixer(ao);
-    
-    // 初始化时设置硬件音量为默认值
-    if (ao->mixer) {
-        audio_output_set_volume_all(ao, ao->volume);
-        LOGD("音频输出: 初始音量设置为 %.2f\n", ao->volume);
-    }
-    
-    LOGD("音频输出: 初始化成功, 采样率=%u, 声道=%d, 格式=%d, 周期=%d, 缓冲区=%u, 混音器=%s\n",
-           ao->sample_rate, ao->channels, ao->format, ao->period_size, buffer_size,
-           ao->mixer ? "启用" : "禁用");
+
+    LOGD("音频输出: 初始化成功, 采样率=%u, 声道=%d, 格式=%d, 周期=%d, 缓冲区=%u\n",
+           ao->sample_rate, ao->channels, ao->format, ao->period_size, buffer_size);
     return ao;
 }
 
@@ -343,17 +274,7 @@ void audio_output_free(AudioOutput *ao) {
         LOGD("audio_output_free: ao->running为0，无需停止线程\n");
     }
 
-    // 关闭 mixer
-    if (ao->mixer) {
-        LOGD("audio_output_free: 关闭混音器\n");
-        snd_mixer_close(ao->mixer);
-        ao->mixer = NULL;
-        LOGD("音频输出: 混音器已关闭\n");
-    } else {
-        LOGD("audio_output_free: ao->mixer为NULL\n");
-    }
-
-    // 在关闭PCM设备前，再次确保音频线程已完全停止
+    // 关闭 PCM设备前，再次确保音频线程已完全停止
     // 这里我们不能使用join，因为线程应该已经停止了
     // 但我们需要确保句柄不再被线程访问
     
@@ -382,103 +303,4 @@ void audio_output_free(AudioOutput *ao) {
     LOGD("audio_output_free: 释放音频输出内存\n");
     free(ao);
     LOGD("音频输出: 已释放\n");
-}
-
-void audio_output_set_volume(AudioOutput *ao, float volume) {
-    if (!ao) return;
-    
-    // 限制音量范围
-    if (volume < 0.0f) volume = 0.0f;
-    if (volume > 1.0f) volume = 1.0f;
-    ao->volume = volume;
-    
-    // 优先使用硬件音量控制
-    if (ao->elem) {
-        // 将 0.0-1.0 的音量值转换为硬件音量范围
-        long hw_volume = (long)(ao->vol_min + volume * (ao->vol_max - ao->vol_min));
-        
-        // 确保在范围内
-        if (hw_volume < ao->vol_min) hw_volume = ao->vol_min;
-        if (hw_volume > ao->vol_max) hw_volume = ao->vol_max;
-        
-        // 分别设置左右声道音量（确保生效）
-        snd_mixer_selem_set_playback_volume(ao->elem, SND_MIXER_SCHN_FRONT_LEFT, hw_volume);
-        snd_mixer_selem_set_playback_volume(ao->elem, SND_MIXER_SCHN_FRONT_RIGHT, hw_volume);
-        
-        // 处理 mixer 事件，使音量设置立即生效
-        snd_mixer_handle_events(ao->mixer);
-        
-        LOGD("音频输出: 硬件音量设置为 %.2f (硬件值: %ld)\n", volume, hw_volume);
-    } else {
-        LOGD("音频输出: 软件音量设置为 %.2f (混音器不可用)\n", volume);
-    }
-}
-
-/**
- * @brief 设置所有可用的 mixer 控件音量（用于 WM8960 等需要多个控件的芯片）
- */
-void audio_output_set_volume_all(AudioOutput *ao, float volume) {
-    if (!ao || !ao->mixer) return;
-    
-    // ==== WM8960 音量控制策略 ====
-    // 根据硬件特性，采用两级音量控制策略：
-    // 1. Playback（数字音量）：固定在较高水平(85%)，避免大衰减
-    // 2. Headphone/Speaker（硬件放大）：根据用户设置的音量进行调节
-    // 这样可以获得更好的信噪比和调节线性度
-    
-    // 打开左右声道 PCM Mixer（野火教程要求）
-    const char *enable_ctrls[] = {"Right Output Mixer PCM", "Left Output Mixer PCM", NULL};
-    for (int i = 0; enable_ctrls[i]; i++) {
-        snd_mixer_selem_id_t *sid;
-        snd_mixer_selem_id_alloca(&sid);
-        snd_mixer_selem_id_set_name(sid, enable_ctrls[i]);
-        snd_mixer_elem_t *elem = snd_mixer_find_selem(ao->mixer, sid);
-        
-        if (elem) {
-            snd_mixer_selem_set_playback_switch_all(elem, 1);
-        }
-    }
-    
-    // Playback 固定在85%（避免数字衰减过大）
-    snd_mixer_selem_id_t *sid;
-    snd_mixer_selem_id_alloca(&sid);
-    snd_mixer_selem_id_set_name(sid, "Playback");
-    snd_mixer_elem_t *elem = snd_mixer_find_selem(ao->mixer, sid);
-    if (elem) {
-        long min, max;
-        snd_mixer_selem_get_playback_volume_range(elem, &min, &max);
-        long hw_vol = min + (max - min) * 85 / 100;  // 固定85%
-        snd_mixer_selem_set_playback_volume_all(elem, hw_vol);
-    }
-    
-    // Headphone 和 Speaker 根据用户音量设置调节（使用三次方根映射）
-    float curve_volume = powf(volume, 1.0f / 3.0f);
-    int vol_percent = (int)(curve_volume * 100);
-    
-    // 最低音量阈值（20%）- WM8960在低音量时dB衰减很大
-    if (vol_percent > 0 && vol_percent < 20) vol_percent = 20;
-    if (vol_percent < 0) vol_percent = 0;
-    if (vol_percent > 100) vol_percent = 100;
-    
-    const char *hw_vol_ctrls[] = {"Headphone", "Speaker", NULL};
-    for (int i = 0; hw_vol_ctrls[i]; i++) {
-        snd_mixer_selem_id_t *sid_hw;
-        snd_mixer_selem_id_alloca(&sid_hw);
-        snd_mixer_selem_id_set_name(sid_hw, hw_vol_ctrls[i]);
-        snd_mixer_elem_t *elem_hw = snd_mixer_find_selem(ao->mixer, sid_hw);
-        
-        if (elem_hw) {
-            long min, max;
-            snd_mixer_selem_get_playback_volume_range(elem_hw, &min, &max);
-            long hw_vol = min + (max - min) * vol_percent / 100;
-            snd_mixer_selem_set_playback_volume_all(elem_hw, hw_vol);
-        }
-    }
-    
-    // 处理 mixer 事件
-    snd_mixer_handle_events(ao->mixer);
-}
-
-float audio_output_get_volume(AudioOutput *ao) {
-    return ao ? ao->volume : 1.0f;
 }

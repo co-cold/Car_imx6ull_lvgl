@@ -22,7 +22,6 @@ struct PlayerCore {
     pthread_mutex_t lock;
     int video_mode; // 0 audio only, 1 video
     int sample_rate; // 当前采样率（0表示未设置）
-    float volume; // 当前音量值（0.0-1.0）
     
     // 视频分辨率
     int video_width;
@@ -46,10 +45,7 @@ PlayerCore* player_core_create(void) {
 
     // 初始采样率设为 0，表示尚未设置（延迟初始化音频输出）
     pc->sample_rate = 0;
-    
-    // 初始化默认音量（与进度条默认值50%同步）
-    pc->volume = 0.5f;
-    
+
     pthread_mutex_init(&pc->lock, NULL);
     return pc;
 }
@@ -107,9 +103,6 @@ int player_core_play_audio(PlayerCore *pc, const char *file_path) {
         return -1;
     }
     
-    // 设置音量
-    audio_output_set_volume_all(pc->ao, pc->volume);
-
     audio_decoder_start(pc->ad);
     audio_output_start(pc->ao);
     audio_output_resume(pc->ao);
@@ -166,9 +159,7 @@ int player_core_play_video(PlayerCore *pc, const char *file_path,
         pc->sample_rate = pc->ad->sample_rate;
         pc->ao = audio_output_init(pc->sample_rate, pc->ad->channels, 2048, pc->rb);
         if (pc->ao) {
-            // 恢复之前设置的音量（避免切换歌曲后音量丢失）
-            audio_output_set_volume_all(pc->ao, pc->volume);
-            
+
             audio_decoder_start(pc->ad);
             audio_output_start(pc->ao);
             audio_output_resume(pc->ao);
@@ -299,32 +290,6 @@ double player_core_get_duration(PlayerCore *pc) {
     if (pc->ad) return pc->ad->duration;
     if (pc->vd) return pc->vd->duration;
     return 0.0;
-}
-
-/**
- * @brief 设置音量
- * @param pc      PlayerCore 实例
- * @param volume  音量值（0.0 - 2.0，1.0为原始音量）
- */
-void player_core_set_volume(PlayerCore *pc, float volume) {
-    if (!pc) return;
-    
-    // 保存音量值（用于切换歌曲后恢复）
-    pc->volume = volume;
-    
-    // 使用 audio_output_set_volume_all 设置所有控件（针对 WM8960）
-    if (pc->ao) {
-        audio_output_set_volume_all(pc->ao, volume);
-    }
-}
-
-/**
- * @brief 获取当前音量
- * @param pc  PlayerCore 实例
- * @return 当前音量值
- */
-float player_core_get_volume(PlayerCore *pc) {
-    return pc && pc->ao ? audio_output_get_volume(pc->ao) : 1.0f;
 }
 
 int player_core_get_state(PlayerCore *pc) {

@@ -88,6 +88,7 @@ add_subdirectory(lv_drivers)
 set(FFMPEG_LIB "/home/coco/arm-ffmpeg/_ffmpeg_install/lib")
 set(X264_LIB   "/home/coco/arm-ffmpeg/_x264_install/lib")
 set(ALSA_LIB   "/home/coco/arm-ffmpeg/alsa_install/lib")
+set(ALSA_INC   "/home/coco/arm-ffmpeg/alsa_install/include")
 
 link_directories(${FFMPEG_LIB} ${X264_LIB} ${ALSA_LIB})
 
@@ -108,7 +109,9 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/ui/Eanalogclock  # 添加gui guider analogclock组件目录
     ${PROJECT_SOURCE_DIR}/ui/Ekeyboard  # 添加gui guider keyboard组件目录
     ${PROJECT_SOURCE_DIR}/dev  # 添加设备代码
+    ${PROJECT_SOURCE_DIR}/dev/audio  # ALSA mixer
     ${PROJECT_SOURCE_DIR}/ipc  # 添加 IPC 层代码
+    ${ALSA_INC}  # ALSA 头文件路径
 )
 
 #########################################源文件处理##################################################
@@ -122,6 +125,9 @@ file(GLOB_RECURSE ANALOGDCLOCK_SOURCES "${PROJECT_SOURCE_DIR}/ui/Eanalogclock/*.
 file(GLOB_RECURSE KEYBOARD_SOURCES "${PROJECT_SOURCE_DIR}/ui/Ekeyboard/*.c")
 # 设备（camera）
 set(DEV_SOURCES "${PROJECT_SOURCE_DIR}/dev/camera_hardware.c")
+
+# 音频混音器（独立模块）
+set(AUDIO_MIXER_SOURCES "${PROJECT_SOURCE_DIR}/dev/audio/alsa_mixer.c")
 # IPC 层源文件
 file(GLOB_RECURSE IPC_SOURCES "${PROJECT_SOURCE_DIR}/ipc/*.c")
 
@@ -183,6 +189,19 @@ target_link_libraries(camera_service PRIVATE
     dbus-1
     dl
     rt
+)
+
+################## 音频服务进程 ###################
+add_executable(audio_service
+    services/audio_service.c
+    ${AUDIO_MIXER_SOURCES}
+)
+
+target_link_libraries(audio_service PRIVATE
+    pthread
+    dbus-1
+    asound             # ALSA 音频（音量控制）
+    m                  # 数学库（powf）
 )
 
 ################## MPU6050 服务进程 ###################

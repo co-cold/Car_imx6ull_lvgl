@@ -13,8 +13,8 @@
 #include "custom_font.h"
 #include "lvgl.h"
 #include "gui_guider.h"
+#include "ipc_audio.h"
 
-// 全局媒体上下文
 static MediaContext g_media_ctx = {0};
 
 // 音乐服务进程管理
@@ -58,12 +58,8 @@ void custom_media_init(lv_ui *ui) {
             g_media_svc_pid = pid;
             printf("[custom_media] media_service started pid=%d\n", pid);
         }
-    }
 
-    static int ipc_initialized = 0;
-    if (!ipc_initialized) {
         if (ipc_media_init(BUS_ADDRESS) == 0) {
-            ipc_initialized = 1;
             ipc_media_set_complete_callback(on_playback_complete, ctx);
         } else {
             fprintf(stderr, "[custom_media] IPC Media init failed\n");
@@ -181,11 +177,33 @@ void custom_media_cleanup_screen(void) {
         lv_img_set_src(ctx->ui->screen_video_img_video, &_noVideo_alpha_800x450);
     }
 
+    /* 退出时重置音乐封面为默认，避免 cover_dsc 野指针导致乱码 */
+    if (ctx->ui && ctx->ui->screen_music_img_music) {
+        lv_img_set_src(ctx->ui->screen_music_img_music, &_1725420839434_alpha_250x250);
+    }
+
     ipc_media_stop();
 
     ctx->playback_just_finished = false;
     ctx->last_pos = 0.0;
     ctx->is_deinitializing = false;
+
+    /* 关闭多媒体界面时停止 media_service 进程 */
+    if (g_media_svc_pid > 0) {
+        kill(g_media_svc_pid, SIGTERM);
+        int retries = 0;
+        while (waitpid(g_media_svc_pid, NULL, WNOHANG) == 0 && retries < 10) {
+            usleep(100000);
+            retries++;
+        }
+        if (retries >= 10) {
+            kill(g_media_svc_pid, SIGKILL);
+            waitpid(g_media_svc_pid, NULL, 0);
+        }
+        printf("[custom_media] media_service stopped pid=%d\n", g_media_svc_pid);
+        g_media_svc_pid = 0;
+        ipc_media_deinit();
+    }
 
     LOGD("custom_media_cleanup_screen: 完成\n");
 }
@@ -324,9 +342,9 @@ int custom_media_get_state(void) {
 }
 
 void custom_media_set_volume(float volume) {
-    ipc_media_set_volume(volume);
+    ipc_audio_set_volume(volume);
 }
 
 float custom_media_get_volume(void) {
-    return ipc_media_get_volume();
+    return ipc_audio_get_volume();
 }

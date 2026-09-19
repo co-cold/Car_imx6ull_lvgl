@@ -163,12 +163,6 @@ static DBusHandlerResult method_handler(DBusConnection *conn,
         if (g_pc) player_core_seek(g_pc, sec);
         reply = dbus_message_new_method_return(msg);
     }
-    else if (strcmp(method, "SetVolume") == 0) {
-        double vol = 1.0;
-        dbus_message_get_args(msg, NULL, DBUS_TYPE_DOUBLE, &vol, DBUS_TYPE_INVALID);
-        if (g_pc) player_core_set_volume(g_pc, (float)vol);
-        reply = dbus_message_new_method_return(msg);
-    }
     else if (strcmp(method, "GetPosition") == 0) {
         double pos = g_pc ? player_core_get_position(g_pc) : 0.0;
         reply = dbus_message_new_method_return(msg);
@@ -183,11 +177,6 @@ static DBusHandlerResult method_handler(DBusConnection *conn,
         dbus_int32_t state = g_pc ? player_core_get_state(g_pc) : 0;
         reply = dbus_message_new_method_return(msg);
         dbus_message_append_args(reply, DBUS_TYPE_INT32, &state, DBUS_TYPE_INVALID);
-    }
-    else if (strcmp(method, "GetVolume") == 0) {
-        double vol = g_pc ? (double)player_core_get_volume(g_pc) : 1.0;
-        reply = dbus_message_new_method_return(msg);
-        dbus_message_append_args(reply, DBUS_TYPE_DOUBLE, &vol, DBUS_TYPE_INVALID);
     }
     else if (strcmp(method, "GetPlaybackInfo") == 0) {
         dbus_int32_t state = g_pc ? player_core_get_state(g_pc) : 0;

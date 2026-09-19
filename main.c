@@ -21,6 +21,7 @@
 #include "ipc/ipc_media.h"
 #include "ipc/ipc_uwb.h"
 #include "ipc/ipc_mpu6050.h"
+#include "ipc/ipc_audio.h"
 
 #define CUSTOM_MEM_TRACE_ENABLE 1
 #include "ui/custom/custom_mem_trace.h"
@@ -114,6 +115,20 @@ static void launch_mpu6050_service(void)
     }
 }
 
+static void launch_audio_service(void)
+{
+    pid_t pid = fork();
+    if (pid == 0) {
+        execl("./audio_service", "audio_service", NULL);
+        perror("execl audio_service");
+        _exit(1);
+    } else if (pid > 0) {
+        printf("[main] audio_service launched, pid=%d\n", pid);
+    } else {
+        perror("fork");
+    }
+}
+
 static void reap_child(int sig)
 {
     (void)sig;
@@ -137,6 +152,7 @@ int main(int argc, char *argv[])
     launch_obd2_service();
     launch_uwb_service();
     launch_mpu6050_service();
+    launch_audio_service();
 
     if (ipc_can_init(CAN_BUS_ADDRESS, on_encoder_update, NULL) != 0) {
         fprintf(stderr, "[main] IPC CAN init failed, running without OBD-II\n");
@@ -144,6 +160,10 @@ int main(int argc, char *argv[])
 
     if (ipc_uwb_init(CAN_BUS_ADDRESS, NULL, NULL) != 0) {
         fprintf(stderr, "[main] IPC UWB init failed, running without UWB\n");
+    }
+
+    if (ipc_audio_init(CAN_BUS_ADDRESS) != 0) {
+        fprintf(stderr, "[main] IPC Audio init failed, running without audio control\n");
     }
 
     if (ipc_mpu6050_init(CAN_BUS_ADDRESS, NULL, NULL) != 0) {
@@ -166,6 +186,7 @@ int main(int argc, char *argv[])
         ipc_media_dispatch(0);
         ipc_uwb_dispatch(0);
         ipc_mpu6050_dispatch(0);
+        ipc_audio_dispatch(0);
         usleep(5000);
     }
 
@@ -173,6 +194,7 @@ int main(int argc, char *argv[])
     ipc_camera_deinit();
     ipc_uwb_deinit();
     ipc_mpu6050_deinit();
+    ipc_audio_deinit();
     return 0;
 }
 

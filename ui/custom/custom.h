@@ -14,6 +14,7 @@ extern "C" {
 #endif
 
 #include "gui_guider.h"
+#include "custom_carDashboard.h"
 
 void custom_init(lv_ui *ui);
 
@@ -26,11 +27,6 @@ void set_status_bar(uint8_t state);
 
 void slider_set_lable_light(lv_event_t *e);
 float slider_update_volume_label(lv_event_t *e);
-
-void start_dashboard_animation(lv_ui *ui);
-void stop_dashboard_animation(void);
-
-void setup_meter_arc_image(lv_ui *ui);
 
 void custom_set_Htimer();
 void custom_set_Ctimer();

@@ -24,7 +24,6 @@ int ipc_media_pause(void);
 int ipc_media_resume(void);
 int ipc_media_stop(void);
 int ipc_media_seek(double seconds);
-int ipc_media_set_volume(float volume);
 
 /* ─── 视频播放 ─── */
 int ipc_media_play_video(const char *file, int width, int height);
@@ -36,7 +35,6 @@ int ipc_media_get_playback_info(int *state, double *position, double *duration);
 double ipc_media_get_position(void);
 double ipc_media_get_duration(void);
 int    ipc_media_get_state(void);
-float  ipc_media_get_volume(void);
 
 /* ─── 视频帧获取 ─── */
 int ipc_media_get_video_frame(uint8_t *dst, int max_size);

@@ -16,7 +16,7 @@ echo $! > /tmp/lvgl_dbus.pid
 sleep 1
 
 echo "========== 启动 LVGL 主程序 =========="
-nohup ./lvgl_demo > /dev/null 2>&1 &
+nohup ./lvgl_demo > /tmp/lvgl_demo.log 2>&1 &
 echo $! > /tmp/lvgl_demo.pid
 echo "已启动，PID=$(cat /tmp/lvgl_demo.pid)"
 

@@ -139,6 +139,11 @@ void custom_media_init_music(void) {
     LOGD("custom_media_init_music: 初始化音乐功能\n");
     ctx->play_mode = 0;
 
+    /* 重置封面图为默认，避免 playlist_clear 后野指针导致乱码 */
+    if (ctx->ui && ctx->ui->screen_music_img_music) {
+        lv_img_set_src(ctx->ui->screen_music_img_music, &_1725420839434_alpha_250x250);
+    }
+
     if (!ctx->audio_playlist) {
         ctx->audio_playlist = playlist_create(PLAYLIST_TYPE_AUDIO, MAX_SONGS);
         LOGD("custom_media_init_music: 重新创建音频播放列表\n");
@@ -221,10 +226,10 @@ static void custom_media_update_song_info(void) {
             cover_dsc.data_size = item->cover_size;
             cover_dsc.data = item->cover_data;
             lv_img_set_src(ctx->ui->screen_music_img_music, &cover_dsc);
-            lv_obj_clear_flag(ctx->ui->screen_music_img_music, LV_OBJ_FLAG_HIDDEN);
         } else {
-            lv_obj_add_flag(ctx->ui->screen_music_img_music, LV_OBJ_FLAG_HIDDEN);
+            lv_img_set_src(ctx->ui->screen_music_img_music, &_1725420839434_alpha_250x250);
         }
+        lv_obj_clear_flag(ctx->ui->screen_music_img_music, LV_OBJ_FLAG_HIDDEN);
     }
 
     /* 更新歌词区域：有歌词显示歌词，无歌词显示"暂无歌词" */

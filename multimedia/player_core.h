@@ -89,20 +89,6 @@ double player_core_get_duration(PlayerCore *pc);
 int player_core_get_state(PlayerCore *pc);
 
 /**
- * @brief 设置音量
- * @param pc      播放器核心实例
- * @param volume  音量值（0.0 - 2.0，1.0为原始音量）
- */
-void player_core_set_volume(PlayerCore *pc, float volume);
-
-/**
- * @brief 获取当前音量
- * @param pc  播放器核心实例
- * @return 当前音量值
- */
-float player_core_get_volume(PlayerCore *pc);
-
-/**
  * @brief 获取当前就绪的视频帧数据（RGB565格式）
  * @param pc 播放器核心实例
  * @return 视频帧缓冲区指针，若无则返回 NULL

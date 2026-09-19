@@ -317,7 +317,6 @@ int ipc_media_pause(void)          { return send_simple("Pause"); }
 int ipc_media_resume(void)         { return send_simple("Resume"); }
 int ipc_media_stop(void)           { return send_simple("Stop"); }
 int ipc_media_seek(double seconds) { return send_double("Seek", seconds); }
-int ipc_media_set_volume(float v)  { return send_double("SetVolume", (double)v); }
 
 /* ─── 视频播放 ─── */
 int ipc_media_play_video(const char *file, int width, int height)
@@ -372,7 +371,6 @@ int ipc_media_get_playback_info(int *state, double *position, double *duration)
 double ipc_media_get_position(void) { double v = 0.0; call_double("GetPosition", &v); return v; }
 double ipc_media_get_duration(void) { double v = 0.0; call_double("GetDuration", &v); return v; }
 int    ipc_media_get_state(void)    { int v = 0;    call_int("GetState", &v);       return v; }
-float  ipc_media_get_volume(void)   { double v = 1.0; call_double("GetVolume", &v);  return (float)v; }
 
 /* ─── 视频帧获取 ─── */
 int ipc_media_get_video_frame(uint8_t *dst, int max_size)

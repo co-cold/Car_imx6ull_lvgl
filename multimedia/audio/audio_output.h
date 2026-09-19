@@ -4,34 +4,24 @@
 #include <alsa/asoundlib.h>
 #include <stdint.h>
 #include <stdio.h>
-#include "ring_buffer.h"   // 来自 multimedia/utils
-
-
+#include "ring_buffer.h"
 
 typedef struct {
-    snd_pcm_t *handle;          // ALSA PCM句柄
-    snd_mixer_t *mixer;         // ALSA Mixer句柄（硬件音量控制）
-    snd_mixer_elem_t *elem;     // 音量控件元素
-    long vol_min;               // 音量最小值
-    long vol_max;               // 音量最大值
-    
+    snd_pcm_t *handle;
     unsigned int sample_rate;
     int channels;
-    snd_pcm_format_t format;    // SND_PCM_FORMAT_S16_LE
-    int period_size;            // 每次写入的帧数（period）
+    snd_pcm_format_t format;
+    int period_size;
 
-    RingBuffer *rb;             // 音频数据来源
+    RingBuffer *rb;
 
-    volatile int running;       // 控制线程：1=运行，0=停止
-    volatile int paused;        // 1=暂停，0=播放中
-    pthread_t thread;           // 播放线程ID
-    
-    float volume;               // 音量大小（0.0 - 2.0，1.0为原始音量）
-    
-    // 内部同步变量，用于线程退出确认
-    pthread_mutex_t exit_lock;  // 退出同步锁
-    pthread_cond_t exit_cond;   // 退出同步条件变量
-    volatile int thread_exited; // 线程退出标志
+    volatile int running;
+    volatile int paused;
+    pthread_t thread;
+
+    pthread_mutex_t exit_lock;
+    pthread_cond_t exit_cond;
+    volatile int thread_exited;
 } AudioOutput;
 
 /**
@@ -69,26 +59,5 @@ void audio_output_stop(AudioOutput *ao);
  * @brief 释放所有资源（必须先停止）
  */
 void audio_output_free(AudioOutput *ao);
-
-/**
- * @brief 设置音量
- * @param ao      AudioOutput 实例
- * @param volume  音量值（0.0 - 2.0，1.0为原始音量）
- */
-void audio_output_set_volume(AudioOutput *ao, float volume);
-
-/**
- * @brief 获取当前音量
- * @param ao  AudioOutput 实例
- * @return 当前音量值
- */
-float audio_output_get_volume(AudioOutput *ao);
-
-/**
- * @brief 设置所有可用的 mixer 控件音量（用于 WM8960 等需要多个控件的芯片）
- * @param ao AudioOutput 实例
- * @param volume 音量值（0.0 - 2.0）
- */
-void audio_output_set_volume_all(AudioOutput *ao, float volume);
 
 #endif
