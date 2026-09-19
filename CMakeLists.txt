@@ -185,6 +185,30 @@ target_link_libraries(camera_service PRIVATE
     rt
 )
 
+################## MPU6050 服务进程 ###################
+add_executable(mpu6050_service
+    services/mpu6050_service.c
+    dev/mpu6050_drv.c
+)
+
+target_link_libraries(mpu6050_service PRIVATE
+    pthread
+    dbus-1
+    m
+)
+
+################## UWB 服务进程 ###################
+add_executable(uwb_service
+    services/uwb_service.c
+    dev/uwb_driver.c
+)
+
+target_link_libraries(uwb_service PRIVATE
+    pthread
+    dbus-1
+    rt
+)
+
 ################## Media 服务进程 ###################
 add_executable(media_service
     services/media_service.c
