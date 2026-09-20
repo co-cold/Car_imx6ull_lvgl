@@ -1,3 +1,8 @@
+/*
+ * audio_decoder.c — 音频解码器实现
+ *
+ * 使用 FFmpeg 解码音频帧为 PCM，写入环形缓冲区。
+ */
 #define _GNU_SOURCE
 #include "audio_decoder.h"
 #include <stdlib.h>

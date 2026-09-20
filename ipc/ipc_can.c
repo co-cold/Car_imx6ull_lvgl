@@ -1,3 +1,9 @@
+/*
+ * ipc_can.c — CAN 总线 IPC 实现
+ *
+ * 通过 D-Bus 信号 EncoderSignal 接收编码器数据，
+ * 支持发送 CAN 帧（用于 ECU 控制）。
+ */
 #include "ipc_can.h"
 #include <stdio.h>
 #include <string.h>

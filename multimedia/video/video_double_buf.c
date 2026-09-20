@@ -1,3 +1,8 @@
+/*
+ * video_double_buf.c — 视频帧双缓冲实现
+ *
+ * 生产者/消费者模式：解码线程写 → UI 线程读，互不阻塞。
+ */
 #include "video_double_buf.h"
 #include <stdlib.h>
 #include <string.h>

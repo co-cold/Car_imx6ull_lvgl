@@ -1,3 +1,9 @@
+/*
+ * audio_service.c — 音频 D-Bus 服务
+ *
+ * 功能：通过 D-Bus 方法调用实现音量控制 set_volume/get_volume，
+ *       与 ALSA mixer 硬件交互控制系统音量。
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

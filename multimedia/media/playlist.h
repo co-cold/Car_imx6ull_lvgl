@@ -1,4 +1,10 @@
 
+/*
+ * playlist.h — 媒体播放列表管理
+ *
+ * 管理音频/视频播放列表，支持添加/删除/排序/随机/循环。
+ */
+
 #ifndef PLAYLIST_H
 #define PLAYLIST_H
 

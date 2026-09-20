@@ -1,3 +1,9 @@
+/*
+ * media_service.c — 媒体播放 D-Bus 服务
+ *
+ * 功能：通过 D-Bus 方法调用实现音乐播放/停止/暂停，
+ *       使用 GStreamer pipeline 进行硬件编解码播放。
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

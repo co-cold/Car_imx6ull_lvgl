@@ -1,3 +1,8 @@
+/*
+ * video_decoder.c — 视频解码器实现
+ *
+ * 使用 FFmpeg 解码视频帧为 RGBA，写入双缓冲。
+ */
 #define _GNU_SOURCE
 #include "video_decoder.h"
 #include <stdio.h>

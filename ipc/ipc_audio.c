@@ -1,3 +1,9 @@
+/*
+ * ipc_audio.c — 音频 IPC 实现
+ *
+ * 通过 D-Bus 远程方法调用 audio_service，
+ * 实现 set_volume / get_volume 指令。
+ */
 #include "ipc_audio.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,7 +13,7 @@
 
 static DBusConnection *g_conn = NULL;
 
-bool ipc_audio_init(const char *bus_address)
+int ipc_audio_init(const char *bus_address)
 {
     DBusError err;
     dbus_error_init(&err);
@@ -29,11 +35,11 @@ bool ipc_audio_init(const char *bus_address)
             dbus_connection_unref(g_conn);
             g_conn = NULL;
         }
-        return false;
+        return -1;
     }
 
     dbus_connection_set_exit_on_disconnect(g_conn, FALSE);
-    return true;
+    return 0;
 }
 
 void ipc_audio_deinit(void)

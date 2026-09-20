@@ -1,3 +1,9 @@
+/*
+ * ipc_media.c — 媒体 IPC 实现
+ *
+ * 通过 D-Bus 远程方法调用 media_service，
+ * 实现音乐播放/停止/暂停 + 视频帧回调。
+ */
 #include "ipc_media.h"
 #include <stdio.h>
 #include <string.h>

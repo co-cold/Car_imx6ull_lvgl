@@ -1,6 +1,13 @@
 #ifndef IPC_MEDIA_H
 #define IPC_MEDIA_H
 
+/*
+ * ipc_media.h — 媒体 IPC 通信接口（D-Bus 客户端）
+ *
+ * 功能：通过 D-Bus 向 media_service 发送播放/停止/暂停命令。
+ *       支持音乐播放完成回调 + 视频帧就绪回调。
+ */
+
 #include <stdint.h>
 
 typedef void (*ipc_media_complete_cb_t)(void *user_data);

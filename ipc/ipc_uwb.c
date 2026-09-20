@@ -1,3 +1,9 @@
+/*
+ * ipc_uwb.c — UWB IPC 实现
+ *
+ * 通过 D-Bus 信号 UwbData / StatusChanged 接收 uwb_service 数据，
+ * 回调通知上层（sensor_fusion）进行融合处理。
+ */
 #include "ipc_uwb.h"
 #include <stdio.h>
 #include <string.h>

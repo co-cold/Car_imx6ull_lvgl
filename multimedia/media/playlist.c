@@ -1,4 +1,9 @@
 
+/*
+ * playlist.c — 播放列表管理实现
+ *
+ * 扫描目录构建音/视频文件列表，支持增删改查、排序、随机。
+ */
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>

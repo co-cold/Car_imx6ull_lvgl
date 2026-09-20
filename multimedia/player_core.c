@@ -1,3 +1,9 @@
+/*
+ * player_core.c — 播放器核心实现
+ *
+ * 协调音频解码器、音频输出、视频解码器、双缓冲，
+ * 实现完整的音频/视频同步播放 pipeline。
+ */
 #include "player_core.h"
 #include "audio/audio_decoder.h"
 #include "audio/audio_output.h"

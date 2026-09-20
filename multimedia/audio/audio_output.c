@@ -1,3 +1,8 @@
+/*
+ * audio_output.c — ALSA 音频输出实现
+ *
+ * 从环形缓冲区取 PCM 数据写入声卡，处理欠载/溢出。
+ */
 #define _GNU_SOURCE
 #include "audio_output.h"
 #include <stdlib.h>

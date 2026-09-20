@@ -126,6 +126,12 @@ file(GLOB_RECURSE KEYBOARD_SOURCES "${PROJECT_SOURCE_DIR}/ui/Ekeyboard/*.c")
 # 设备（camera）
 set(DEV_SOURCES "${PROJECT_SOURCE_DIR}/dev/camera_hardware.c")
 
+# 传感器融合 + 倒车训练（运行在 lvgl_demo 主进程）
+set(FUSION_SOURCES
+    "${PROJECT_SOURCE_DIR}/dev/sensor_fusion.c"
+    "${PROJECT_SOURCE_DIR}/dev/reverse_training.c"
+)
+
 # 音频混音器（独立模块）
 set(AUDIO_MIXER_SOURCES "${PROJECT_SOURCE_DIR}/dev/audio/alsa_mixer.c")
 # IPC 层源文件
@@ -147,6 +153,7 @@ add_executable(lvgl_demo
     ${ANALOGDCLOCK_SOURCES}# gui guider analogclock组件
     ${KEYBOARD_SOURCES}# gui guider keyboard组件
     ${DEV_SOURCES} # 外设（camera）
+    ${FUSION_SOURCES} # 传感器融合 + 倒车训练
     ${IPC_SOURCES} # IPC 层
 )
 

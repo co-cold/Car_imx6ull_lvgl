@@ -1,6 +1,13 @@
 #ifndef VIDEO_DECODER_H
 #define VIDEO_DECODER_H
 
+/*
+ * video_decoder.h — 视频解码器接口
+ *
+ * 使用 libavcodec/FFmpeg 解码视频帧为 RGB/RGBA，
+ * 写入双缓冲区供 UI 渲染。
+ */
+
 #include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>

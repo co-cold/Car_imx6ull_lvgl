@@ -1,3 +1,8 @@
+/*
+ * media_metadata.c — 媒体元数据解析实现
+ *
+ * 读取音频/视频文件标签信息（标题、艺术家、专辑、时长）。
+ */
 #include "media_metadata.h"
 #include <stdio.h>
 #include <stdlib.h>

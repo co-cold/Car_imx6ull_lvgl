@@ -1,3 +1,10 @@
+/*
+ * mpu6050_service.c — MPU6050 六轴传感器 D-Bus 服务
+ *
+ * 功能：通过 IIO sysfs 读取加速度/角速度，互补滤波计算姿态角，
+ *       实时检测驾驶行为（急刹/急加速/转向）。
+ *       通过 D-Bus 信号 Mpu6050Data / Mpu6050Behavior 对外广播。
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -77,14 +84,26 @@ int main(int argc, char *argv[])
     (void)argc;
     (void)argv;
 
+    setlinebuf(stdout);
     signal(SIGINT,  sig_handler);
     signal(SIGTERM, sig_handler);
 
-    const char *device = DEFAULT_DEVICE;
-    if (argc >= 2) device = argv[1];
+    char   detected[64] = {0};
+    const char *device   = NULL;
+
+    if (argc >= 2) {
+        device = argv[1];
+    } else {
+        if (mpu6050_drv_autodetect(detected, sizeof(detected)) == 0) {
+            device = detected;
+        } else {
+            fprintf(stderr, "[mpu6050_service] auto-detect failed, trying default\n");
+            device = DEFAULT_DEVICE;
+        }
+    }
 
     if (mpu6050_drv_init(&g_mpu6050_drv, device) != 0) {
-        fprintf(stderr, "[mpu6050_service] MPU6050 driver init failed\n");
+        fprintf(stderr, "[mpu6050_service] MPU6050 driver init failed (%s)\n", device);
         return 1;
     }
 
@@ -127,6 +146,7 @@ int main(int argc, char *argv[])
 
     Mpu6050_Data_t last_data;
     int            last_valid = 0;
+    /* uint32_t       last_loop  = 0; */
 
     while (g_running) {
         dbus_connection_read_write_dispatch(g_conn, 0);
@@ -145,7 +165,18 @@ int main(int argc, char *argv[])
             }
         }
 
-        usleep(20000);
+        /* 每 ~5 秒打印一次状态 —— 调试时可打开 */
+        /*
+        last_loop++;
+        if (last_loop % 250 == 0) {
+            printf("[mpu6050_service] rx=%u err=%u ax=%.2f ay=%.2f az=%.2f | pitch=%.1f roll=%.1f | beh=%d\n",
+                g_mpu6050_drv.rx_count, g_mpu6050_drv.err_count,
+                data.ax_mss, data.ay_mss, data.az_mss,
+                data.pitch_deg, data.roll_deg, data.behavior);
+        }
+        */
+
+        usleep(50000);
     }
 
     printf("[mpu6050_service] shutting down...\n");

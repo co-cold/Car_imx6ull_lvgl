@@ -1,3 +1,8 @@
+/*
+ * ring_buffer.c — 环形缓冲区实现
+ *
+ * 生产者/消费者模式，支持阻塞等待和超时。
+ */
 #include "ring_buffer.h"
 #include <stdlib.h>
 #include <string.h>

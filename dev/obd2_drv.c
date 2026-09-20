@@ -1,3 +1,17 @@
+/*
+ * obd2_drv.c — OBD-II 诊断驱动实现（SocketCAN）
+ *
+ * 通过 CAN 总线对 OBD-II ECU 轮询 PID 数据：
+ *   PID 0x0C — 发动机转速 (RPM)
+ *   PID 0x0D — 车速 (km/h)
+ *   PID 0x05 — 冷却液温度 (°C)
+ *   PID 0x11 — 节气门位置 (%)
+ *   PID 0x04 — 发动机负荷 (%)
+ *
+ * 双线程设计：
+ *   - TX 线程：每 50ms 轮询一个 PID
+ *   - RX 线程：接收并解析 ECU 响应
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,6 +27,8 @@
 #include <stdbool.h>
 
 #include "obd2_drv.h"
+
+// ========== CAN 总线配置 ==========
 
 #define CAN_IFNAME           "can0"
 #define OBD2_REQUEST_ID      0x7DF
@@ -30,6 +46,8 @@
 #define RESPONSE_TIMEOUT_MS  200
 
 #define OBD2_SERVICE_SHOW_DATA 0x01
+
+// ========== SocketCAN + PID 请求 ==========
 
 static const uint8_t pid_list[PID_COUNT] = {
     PID_ENGINE_RPM,
@@ -142,6 +160,8 @@ static int parse_obd2_response(const struct can_frame *frame, Obd2_Data_t *obd2)
     return 0;
 }
 
+// ========== TX / RX 线程 ==========
+
 static void *tx_thread(void *arg)
 {
     obd2_drv_t *drv = (obd2_drv_t *)arg;
@@ -202,6 +222,8 @@ static void *rx_thread(void *arg)
 
     return NULL;
 }
+
+// ========== 公共 API ==========
 
 int obd2_drv_init(obd2_drv_t *drv)
 {

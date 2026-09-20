@@ -1,6 +1,13 @@
 #ifndef MEDIA_METADATA_H
 #define MEDIA_METADATA_H
 
+/*
+ * media_metadata.h — 媒体文件元数据解析
+ *
+ * 读取音频/视频文件的标签信息（标题、艺术家、时长等），
+ * 支持格式化和时长转换输出。
+ */
+
 #include <stdint.h>
 #include <stddef.h>
 #include <stddef.h>

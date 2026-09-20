@@ -1,6 +1,12 @@
 #ifndef AUDIO_OUTPUT_H
 #define AUDIO_OUTPUT_H
 
+/*
+ * audio_output.h — ALSA 音频输出接口
+ *
+ * 从环形缓冲区读取 PCM 数据，通过 ALSA 驱动输出到声卡。
+ */
+
 #include <alsa/asoundlib.h>
 #include <stdint.h>
 #include <stdio.h>

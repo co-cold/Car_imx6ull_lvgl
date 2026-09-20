@@ -1,6 +1,14 @@
 #ifndef IPC_UWB_H
 #define IPC_UWB_H
 
+/*
+ * ipc_uwb.h — UWB 定位 IPC 通信接口（D-Bus 客户端）
+ *
+ * 功能：通过 D-Bus 从 uwb_service 订阅距离数据信号，
+ *       回调通知上层（sensor_fusion / UI）。
+ *       支持设备状态变化信号（connected/disconnected）。
+ */
+
 #include <stdint.h>
 #include <pthread.h>
 #include <dbus/dbus.h>

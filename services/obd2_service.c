@@ -1,3 +1,9 @@
+/*
+ * obd2_service.c — OBD-II 诊断 D-Bus 服务
+ *
+ * 功能：通过 SocketCAN 轮询 OBD-II ECU 获取 RPM/车速/节气门等数据，
+ *       通过 D-Bus 信号 EncoderSignal 对外广播编码器兼容数据。
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

@@ -1,6 +1,13 @@
 #ifndef RING_BUFFER_H
 #define RING_BUFFER_H
 
+/*
+ * ring_buffer.h — 线程安全环形缓冲区
+ *
+ * 用于音频/视频数据在生产者（解码器）和消费者（输出/渲染）之间传递。
+ * 支持阻塞和非阻塞读写。
+ */
+
 #include <stdint.h>
 #include <pthread.h>
 

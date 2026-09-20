@@ -1,6 +1,13 @@
 #ifndef VIDEO_DOUBLE_BUF_H
 #define VIDEO_DOUBLE_BUF_H
 
+/*
+ * video_double_buf.h — 视频帧双缓冲管理
+ *
+ * 两个缓冲区交替写入/读取，生产者（解码器）写入一帧，
+ * 消费者（UI渲染）读取另一帧，避免撕裂。
+ */
+
 #include <stdint.h>
 #include <pthread.h>
 

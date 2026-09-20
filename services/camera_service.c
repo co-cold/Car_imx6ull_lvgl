@@ -1,3 +1,11 @@
+/*
+ * camera_service.c — 摄像头 D-Bus 服务
+ *
+ * 功能：使用 V4L2 驱动采集摄像头（/dev/video0）JPEG 帧，
+ *       通过共享内存 + D-Bus 信号 FrameReady 推送给 UI 端。
+ *       
+ * 数据流：V4L2 capture → JPEG 编码 → shm_open 写入 → DBus 信号通知
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

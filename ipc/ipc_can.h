@@ -1,6 +1,13 @@
 #ifndef IPC_CAN_H
 #define IPC_CAN_H
 
+/*
+ * ipc_can.h — CAN 总线 IPC 通信接口（D-Bus 客户端）
+ *
+ * 功能：通过 D-Bus 从 obd2_service 订阅编码器信号，
+ *       同时支持发送 CAN 帧用于 ECU 控制（如设置档位）。
+ */
+
 #include <stdint.h>
 #include <pthread.h>
 #include <dbus/dbus.h>

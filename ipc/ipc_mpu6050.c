@@ -1,3 +1,9 @@
+/*
+ * ipc_mpu6050.c — MPU6050 IPC 实现
+ *
+ * 通过 D-Bus 信号 Mpu6050Data / Mpu6050Behavior 接收数据，
+ * 回调通知上层进行姿态解算和驾驶行为统计。
+ */
 #include "ipc_mpu6050.h"
 #include <stdio.h>
 #include <string.h>

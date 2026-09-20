@@ -1,3 +1,9 @@
+/*
+ * ipc_camera.c — 摄像头 IPC 实现
+ *
+ * 通过 D-Bus 信号 FrameReady 接收共享内存中的 JPEG 帧数据，
+ * 回调通知 UI 层进行解码和渲染。
+ */
 #include "ipc_camera.h"
 #include <stdio.h>
 #include <string.h>

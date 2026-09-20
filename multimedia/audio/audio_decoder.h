@@ -1,6 +1,13 @@
 #ifndef AUDIO_DECODER_H
 #define AUDIO_DECODER_H
 
+/*
+ * audio_decoder.h — 音频解码器接口
+ *
+ * 使用 libavcodec/FFmpeg 将压缩音频（MP3/AAC）解码为 PCM 数据，
+ * 送入环形缓冲区供 audio_output 消费。
+ */
+
 #include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>

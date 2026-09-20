@@ -3,7 +3,7 @@
 
 echo "========== 关闭中 =========="
 
-for proc in lvgl_demo obd2_service camera_service media_service audio_service gdbserver; do
+for proc in lvgl_demo obd2_service camera_service media_service audio_service uwb_service mpu6050_service gdbserver; do
     kill -9 $(pidof $proc) 2>/dev/null
 done
 
