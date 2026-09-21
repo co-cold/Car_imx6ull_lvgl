@@ -54,8 +54,8 @@ int ipc_base_wait_for_service(DBusConnection *conn,
             if (has_owner) return 0;
         } else {
             dbus_error_free(&e);
+            dbus_message_unref(m);
         }
-        dbus_message_unref(m);
         usleep(20000);
     }
     return -1;
