@@ -1,5 +1,6 @@
 #include "custom_cam.h"
 #include "ipc/ipc_camera.h"
+#include "ipc/lvgl_dbus_protocol.h"
 #include "gui_guider.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,7 +10,7 @@
 #include <signal.h>
 #include <sys/wait.h>
 
-#define BUS_ADDRESS "unix:path=/tmp/lvgl-dbus-session"
+
 
 // 全局摄像头UI管理器
 static camera_ui_t *cam_ui = NULL;
@@ -77,7 +78,7 @@ camera_ui_t* camera_ui_init(lv_obj_t *display_img, const char *device, int width
     usleep(1000000);
 
     // 初始化 IPC 连接
-    if (ipc_camera_init(BUS_ADDRESS, width, height, NULL, NULL) != 0) {
+    if (ipc_camera_init(PROTO_BUS_ADDRESS, width, height, NULL, NULL) != 0) {
         printf("警告: IPC Camera 初始化失败，摄像头不可用\n");
     }
     

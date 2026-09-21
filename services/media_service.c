@@ -12,14 +12,12 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <time.h>
+#include <stdint.h>
 #include <dbus/dbus.h>
 
 #include "player_core.h"
-
-#define SERVICE_NAME   "com.lvgl.demo.Media"
-#define OBJECT_PATH    "/com/lvgl/demo/Media"
-#define INTERFACE_NAME "com.lvgl.demo.Media"
-#define BUS_ADDRESS    "unix:path=/tmp/lvgl-dbus-session"
+#include "ipc/lvgl_dbus_protocol.h"
 #define SHM_NAME       "/lvgl_video_frame"
 
 static volatile int g_running = 1;
@@ -31,6 +29,7 @@ static int   g_frame_size = 0;
 static int   g_video_width = 800;
 static int   g_video_height = 450;
 static int   g_video_mode = 0;
+static uint32_t g_frame_seq = 0;
 
 static void sig_handler(int sig)
 {
@@ -41,8 +40,26 @@ static void sig_handler(int sig)
 static void emit_frame_ready(void)
 {
     DBusMessage *msg = dbus_message_new_signal(
-        OBJECT_PATH, INTERFACE_NAME, "FrameReady");
+        MEDIA_OBJECT_PATH, MEDIA_IFACE_NAME, MEDIA_SIGNAL_FRAME);
     if (!msg) return;
+
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    uint64_t timestamp = (uint64_t)ts.tv_sec * 1000000ULL + (uint64_t)ts.tv_nsec / 1000ULL;
+
+    dbus_uint32_t seq   = ++g_frame_seq;
+    dbus_uint32_t size  = (dbus_uint32_t)g_frame_size;
+    dbus_uint32_t width = (dbus_uint32_t)g_video_width;
+    dbus_uint32_t height = (dbus_uint32_t)g_video_height;
+
+    dbus_message_append_args(msg,
+        DBUS_TYPE_UINT32, &seq,
+        DBUS_TYPE_UINT32, &size,
+        DBUS_TYPE_UINT64, &timestamp,
+        DBUS_TYPE_UINT32, &width,
+        DBUS_TYPE_UINT32, &height,
+        DBUS_TYPE_INVALID);
+
     dbus_connection_send(g_conn, msg, NULL);
     dbus_connection_flush(g_conn);
     dbus_message_unref(msg);
@@ -51,7 +68,7 @@ static void emit_frame_ready(void)
 static void emit_playback_complete(void)
 {
     DBusMessage *msg = dbus_message_new_signal(
-        OBJECT_PATH, INTERFACE_NAME, "PlaybackComplete");
+        MEDIA_OBJECT_PATH, MEDIA_IFACE_NAME, MEDIA_SIGNAL_COMPLETE);
     if (!msg) return;
     dbus_connection_send(g_conn, msg, NULL);
     dbus_connection_flush(g_conn);
@@ -120,19 +137,18 @@ static DBusHandlerResult method_handler(DBusConnection *conn,
     if (!method)
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 
-    if (strcmp(method, "PlayAudio") == 0) {
+    if (strcmp(method, MEDIA_METHOD_PLAY_AUDIO) == 0) {
         const char *file = NULL;
         dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &file, DBUS_TYPE_INVALID);
-        int ret = -1;
+        dbus_int32_t r = -1;
         if (file && g_pc) {
-            ret = player_core_play_audio(g_pc, file);
+            r = player_core_play_audio(g_pc, file);
             g_video_mode = 0;
         }
         reply = dbus_message_new_method_return(msg);
-        dbus_int32_t r = ret;
         dbus_message_append_args(reply, DBUS_TYPE_INT32, &r, DBUS_TYPE_INVALID);
     }
-    else if (strcmp(method, "PlayVideo") == 0) {
+    else if (strcmp(method, MEDIA_METHOD_PLAY_VIDEO) == 0) {
         const char *file = NULL;
         dbus_uint32_t w = 0, h = 0;
         dbus_message_get_args(msg, NULL,
@@ -140,51 +156,58 @@ static DBusHandlerResult method_handler(DBusConnection *conn,
             DBUS_TYPE_UINT32, &w,
             DBUS_TYPE_UINT32, &h,
             DBUS_TYPE_INVALID);
-        int ret = -1;
+        dbus_int32_t r = -1;
         if (file && g_pc) {
             init_shared_memory((int)w, (int)h);
-            ret = player_core_play_video(g_pc, file, (int)w, (int)h);
-            g_video_mode = (ret == 0) ? 1 : 0;
+            r = player_core_play_video(g_pc, file, (int)w, (int)h);
+            g_video_mode = (r == 0) ? 1 : 0;
         }
         reply = dbus_message_new_method_return(msg);
-        dbus_int32_t r = ret;
         dbus_message_append_args(reply, DBUS_TYPE_INT32, &r, DBUS_TYPE_INVALID);
     }
-    else if (strcmp(method, "Pause") == 0) {
-        if (g_pc) player_core_pause(g_pc);
+    else if (strcmp(method, MEDIA_METHOD_PAUSE) == 0) {
+        dbus_int32_t r = -1;
+        if (g_pc) { player_core_pause(g_pc); r = 0; }
         reply = dbus_message_new_method_return(msg);
+        dbus_message_append_args(reply, DBUS_TYPE_INT32, &r, DBUS_TYPE_INVALID);
     }
-    else if (strcmp(method, "Resume") == 0) {
-        if (g_pc) player_core_resume(g_pc);
+    else if (strcmp(method, MEDIA_METHOD_RESUME) == 0) {
+        dbus_int32_t r = -1;
+        if (g_pc) { player_core_resume(g_pc); r = 0; }
         reply = dbus_message_new_method_return(msg);
+        dbus_message_append_args(reply, DBUS_TYPE_INT32, &r, DBUS_TYPE_INVALID);
     }
-    else if (strcmp(method, "Stop") == 0) {
-        if (g_pc) player_core_stop(g_pc);
+    else if (strcmp(method, MEDIA_METHOD_STOP) == 0) {
+        dbus_int32_t r = -1;
+        if (g_pc) { player_core_stop(g_pc); r = 0; }
         g_video_mode = 0;
         reply = dbus_message_new_method_return(msg);
+        dbus_message_append_args(reply, DBUS_TYPE_INT32, &r, DBUS_TYPE_INVALID);
     }
-    else if (strcmp(method, "Seek") == 0) {
+    else if (strcmp(method, MEDIA_METHOD_SEEK) == 0) {
         double sec = 0.0;
         dbus_message_get_args(msg, NULL, DBUS_TYPE_DOUBLE, &sec, DBUS_TYPE_INVALID);
-        if (g_pc) player_core_seek(g_pc, sec);
+        dbus_int32_t r = -1;
+        if (g_pc) { player_core_seek(g_pc, sec); r = 0; }
         reply = dbus_message_new_method_return(msg);
+        dbus_message_append_args(reply, DBUS_TYPE_INT32, &r, DBUS_TYPE_INVALID);
     }
-    else if (strcmp(method, "GetPosition") == 0) {
+    else if (strcmp(method, MEDIA_METHOD_GET_POSITION) == 0) {
         double pos = g_pc ? player_core_get_position(g_pc) : 0.0;
         reply = dbus_message_new_method_return(msg);
         dbus_message_append_args(reply, DBUS_TYPE_DOUBLE, &pos, DBUS_TYPE_INVALID);
     }
-    else if (strcmp(method, "GetDuration") == 0) {
+    else if (strcmp(method, MEDIA_METHOD_GET_DURATION) == 0) {
         double dur = g_pc ? player_core_get_duration(g_pc) : 0.0;
         reply = dbus_message_new_method_return(msg);
         dbus_message_append_args(reply, DBUS_TYPE_DOUBLE, &dur, DBUS_TYPE_INVALID);
     }
-    else if (strcmp(method, "GetState") == 0) {
+    else if (strcmp(method, MEDIA_METHOD_GET_STATE) == 0) {
         dbus_int32_t state = g_pc ? player_core_get_state(g_pc) : 0;
         reply = dbus_message_new_method_return(msg);
         dbus_message_append_args(reply, DBUS_TYPE_INT32, &state, DBUS_TYPE_INVALID);
     }
-    else if (strcmp(method, "GetPlaybackInfo") == 0) {
+    else if (strcmp(method, MEDIA_METHOD_GET_INFO) == 0) {
         dbus_int32_t state = g_pc ? player_core_get_state(g_pc) : 0;
         double pos = g_pc ? player_core_get_position(g_pc) : 0.0;
         double dur = g_pc ? player_core_get_duration(g_pc) : 0.0;
@@ -229,7 +252,7 @@ int main(int argc, char *argv[])
     DBusError err;
     dbus_error_init(&err);
 
-    g_conn = dbus_connection_open(BUS_ADDRESS, &err);
+    g_conn = dbus_connection_open(PROTO_BUS_ADDRESS, &err);
     if (!g_conn || dbus_error_is_set(&err)) {
         fprintf(stderr, "[media_service] D-Bus connect failed: %s\n", err.message);
         dbus_error_free(&err);
@@ -243,20 +266,20 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    int ret = dbus_bus_request_name(g_conn, SERVICE_NAME,
+    int ret = dbus_bus_request_name(g_conn, MEDIA_SERVICE_NAME,
         DBUS_NAME_FLAG_DO_NOT_QUEUE, &err);
     if (ret != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
         fprintf(stderr, "[media_service] name already taken\n");
         return 1;
     }
 
-    if (!dbus_connection_register_object_path(g_conn, OBJECT_PATH,
+    if (!dbus_connection_register_object_path(g_conn, MEDIA_OBJECT_PATH,
             &g_vtable, NULL)) {
         fprintf(stderr, "[media_service] register object failed\n");
         return 1;
     }
 
-    printf("[media_service] D-Bus service registered: %s\n", SERVICE_NAME);
+    printf("[media_service] D-Bus service registered: %s\n", MEDIA_SERVICE_NAME);
 
     int prev_audio_state = 0;
 

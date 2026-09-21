@@ -14,6 +14,7 @@
 #include "lvgl.h"
 #include "gui_guider.h"
 #include "ipc_audio.h"
+#include "ipc/lvgl_dbus_protocol.h"
 
 static MediaContext g_media_ctx = {0};
 
@@ -59,7 +60,7 @@ void custom_media_init(lv_ui *ui) {
             printf("[custom_media] media_service started pid=%d\n", pid);
         }
 
-        if (ipc_media_init(BUS_ADDRESS) == 0) {
+        if (ipc_media_init(PROTO_BUS_ADDRESS) == 0) {
             ipc_media_set_complete_callback(on_playback_complete, ctx);
         } else {
             fprintf(stderr, "[custom_media] IPC Media init failed\n");

@@ -12,11 +12,7 @@
 #include <dbus/dbus.h>
 
 #include "obd2_drv.h"
-
-#define SERVICE_NAME   "com.lvgl.demo.CAN"
-#define OBJECT_PATH    "/com/lvgl/demo/CAN"
-#define INTERFACE_NAME "com.lvgl.demo.CAN"
-#define BUS_ADDRESS    "unix:path=/tmp/lvgl-dbus-session"
+#include "ipc/lvgl_dbus_protocol.h"
 
 static volatile int g_running = 1;
 static DBusConnection *g_conn = NULL;
@@ -31,7 +27,7 @@ static void sig_handler(int sig)
 static void emit_vehicle_signal(DBusConnection *conn, const Encoder_Data_t *enc)
 {
     DBusMessage *msg = dbus_message_new_signal(
-        OBJECT_PATH, INTERFACE_NAME, "EncoderUpdated");
+        OBD2_OBJECT_PATH, OBD2_IFACE_NAME, OBD2_SIGNAL_ENCODER);
     if (!msg) return;
 
     int32_t count = enc->count;
@@ -52,9 +48,17 @@ static void emit_vehicle_signal(DBusConnection *conn, const Encoder_Data_t *enc)
 static DBusHandlerResult method_handler(DBusConnection *conn,
     DBusMessage *msg, void *data)
 {
-    (void)conn;
     (void)data;
-    return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+
+    dbus_int32_t ret = -1;
+    DBusMessage *reply = dbus_message_new_method_return(msg);
+    if (reply) {
+        dbus_message_append_args(reply, DBUS_TYPE_INT32, &ret, DBUS_TYPE_INVALID);
+        dbus_connection_send(conn, reply, NULL);
+        dbus_connection_flush(conn);
+        dbus_message_unref(reply);
+    }
+    return DBUS_HANDLER_RESULT_HANDLED;
 }
 
 static DBusObjectPathVTable g_vtable = {
@@ -77,7 +81,7 @@ int main(int argc, char *argv[])
     DBusError err;
     dbus_error_init(&err);
 
-    g_conn = dbus_connection_open(BUS_ADDRESS, &err);
+    g_conn = dbus_connection_open(PROTO_BUS_ADDRESS, &err);
     if (!g_conn || dbus_error_is_set(&err)) {
         fprintf(stderr, "[obd2_service] D-Bus connect failed: %s\n", err.message);
         dbus_error_free(&err);
@@ -91,7 +95,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    int ret = dbus_bus_request_name(g_conn, SERVICE_NAME,
+    int ret = dbus_bus_request_name(g_conn, OBD2_SERVICE_NAME,
         DBUS_NAME_FLAG_DO_NOT_QUEUE, &err);
     if (dbus_error_is_set(&err)) {
         fprintf(stderr, "[obd2_service] request_name failed: %s\n", err.message);
@@ -103,13 +107,13 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if (!dbus_connection_register_object_path(g_conn, OBJECT_PATH,
+    if (!dbus_connection_register_object_path(g_conn, OBD2_OBJECT_PATH,
             &g_vtable, NULL)) {
         fprintf(stderr, "[obd2_service] register object failed\n");
         return 1;
     }
 
-    printf("[obd2_service] D-Bus service registered: %s\n", SERVICE_NAME);
+    printf("[obd2_service] D-Bus service registered: %s\n", OBD2_SERVICE_NAME);
 
     Encoder_Data_t last_enc = {0};
     int            last_enc_valid = 0;

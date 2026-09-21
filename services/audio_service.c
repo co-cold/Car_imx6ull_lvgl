@@ -11,11 +11,7 @@
 #include <signal.h>
 #include <dbus/dbus.h>
 #include "alsa_mixer.h"
-
-#define SERVICE_NAME   "com.lvgl.demo.Audio"
-#define OBJECT_PATH    "/com/lvgl/demo/Audio"  
-#define INTERFACE_NAME "com.lvgl.demo.Audio"
-#define BUS_ADDRESS    "unix:path=/tmp/lvgl-dbus-session"
+#include "ipc/lvgl_dbus_protocol.h"
 
 static volatile int g_running = 1;
 static DBusConnection *g_conn = NULL;
@@ -31,29 +27,32 @@ static DBusHandlerResult message_filter(DBusConnection *conn, DBusMessage *msg, 
 {
     (void)data;
     
-    if (dbus_message_is_method_call(msg, INTERFACE_NAME, "SetVolume")) {
+    if (dbus_message_is_method_call(msg, AUDIO_IFACE_NAME, AUDIO_METHOD_SET_VOLUME)) {
         double vol = 0.0;
+        dbus_int32_t ret = -1;
         if (dbus_message_get_args(msg, NULL, DBUS_TYPE_DOUBLE, &vol, DBUS_TYPE_INVALID)) {
             printf("[audio_service] Received SetVolume: %.2f\n", vol);
             if (g_am) {
                 alsa_mixer_set_volume(g_am, (float)vol);
                 printf("[audio_service] Volume set successfully\n");
+                ret = 0;
             } else {
                 fprintf(stderr, "[audio_service] ALSA mixer not initialized\n");
-            }
-            DBusMessage *reply = dbus_message_new_method_return(msg);
-            if (reply) {
-                dbus_connection_send(conn, reply, NULL);
-                dbus_connection_flush(conn);
-                dbus_message_unref(reply);
             }
         } else {
             fprintf(stderr, "[audio_service] Failed to parse SetVolume args\n");
         }
+        DBusMessage *reply = dbus_message_new_method_return(msg);
+        if (reply) {
+            dbus_message_append_args(reply, DBUS_TYPE_INT32, &ret, DBUS_TYPE_INVALID);
+            dbus_connection_send(conn, reply, NULL);
+            dbus_connection_flush(conn);
+            dbus_message_unref(reply);
+        }
         return DBUS_HANDLER_RESULT_HANDLED;
     }
     
-    if (dbus_message_is_method_call(msg, INTERFACE_NAME, "GetVolume")) {
+    if (dbus_message_is_method_call(msg, AUDIO_IFACE_NAME, AUDIO_METHOD_GET_VOLUME)) {
         float vol = g_am ? alsa_mixer_get_volume(g_am) : 0.5f;
         DBusMessage *reply = dbus_message_new_method_return(msg);
         if (reply) {
@@ -81,7 +80,7 @@ int main(int argc, char *argv[])
     dbus_error_init(&err);
 
     // 连接到指定的 D-Bus 会话地址
-    g_conn = dbus_connection_open(BUS_ADDRESS, &err);
+    g_conn = dbus_connection_open(PROTO_BUS_ADDRESS, &err);
     if (!g_conn) {
         fprintf(stderr, "[audio_service] Failed to connect to D-Bus: %s\n", err.message);
         dbus_error_free(&err);
@@ -96,7 +95,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if (dbus_bus_request_name(g_conn, SERVICE_NAME, DBUS_NAME_FLAG_REPLACE_EXISTING, &err) != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
+    if (dbus_bus_request_name(g_conn, AUDIO_SERVICE_NAME, DBUS_NAME_FLAG_REPLACE_EXISTING, &err) != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
         fprintf(stderr, "[audio_service] Failed to acquire service name: %s\n", err.message);
         dbus_error_free(&err);
         dbus_connection_unref(g_conn);

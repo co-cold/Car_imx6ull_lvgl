@@ -11,7 +11,8 @@
 #include <stdint.h>
 
 typedef void (*ipc_media_complete_cb_t)(void *user_data);
-typedef void (*ipc_media_frame_cb_t)(void *user_data);
+typedef void (*ipc_media_frame_cb_t)(uint32_t seq, uint32_t size, uint64_t timestamp,
+                                     uint32_t width, uint32_t height, void *user_data);
 
 int ipc_media_init(const char *bus_address);
 

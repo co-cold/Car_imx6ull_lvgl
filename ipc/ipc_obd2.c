@@ -5,26 +5,42 @@
  * 回调通知上层进行传感器融合。
  */
 #include "ipc_obd2.h"
+#include "lvgl_dbus_protocol.h"
+#include "ipc_base.h"
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-
-#define OBD2_SERVICE_NAME  "com.lvgl.demo.CAN"
-#define OBD2_OBJECT_PATH   "/com/lvgl/demo/CAN"
-#define OBD2_INTERFACE     "com.lvgl.demo.CAN"
 
 static DBusConnection    *g_conn = NULL;
 static Encoder_Data_t     g_data;
 static pthread_mutex_t    g_data_mutex = PTHREAD_MUTEX_INITIALIZER;
 static ipc_obd2_data_cb_t g_user_cb = NULL;
 static void              *g_user_data = NULL;
+static int                g_service_connected = 0;
 
 static DBusHandlerResult filter_cb(DBusConnection *conn, DBusMessage *msg, void *data)
 {
     (void)conn;
     (void)data;
 
-    if (!dbus_message_is_signal(msg, OBD2_INTERFACE, "EncoderUpdated"))
+    /* 监听服务 NameOwnerChanged 实现服务发现与重连 */
+    if (dbus_message_is_signal(msg, "org.freedesktop.DBus", "NameOwnerChanged")) {
+        const char *nm = NULL, *old_owner = NULL, *new_owner = NULL;
+        if (dbus_message_get_args(msg, NULL,
+                DBUS_TYPE_STRING, &nm,
+                DBUS_TYPE_STRING, &old_owner,
+                DBUS_TYPE_STRING, &new_owner,
+                DBUS_TYPE_INVALID)) {
+            if (nm && strcmp(nm, OBD2_SERVICE_NAME) == 0) {
+                g_service_connected = (new_owner && new_owner[0] != '\0') ? 1 : 0;
+                printf("[ipc_obd2] service %s\n",
+                       g_service_connected ? "appeared" : "disappeared");
+            }
+        }
+        return DBUS_HANDLER_RESULT_HANDLED;
+    }
+
+    if (!dbus_message_is_signal(msg, OBD2_IFACE_NAME, OBD2_SIGNAL_ENCODER))
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 
     DBusError err;
@@ -63,32 +79,31 @@ int ipc_obd2_init(const char *bus_address,
     DBusError err;
     dbus_error_init(&err);
 
-    g_conn = dbus_connection_open(bus_address, &err);
-    if (!g_conn || dbus_error_is_set(&err)) {
-        fprintf(stderr, "[ipc_obd2] connection failed: %s\n", err.message);
-        dbus_error_free(&err);
-        return -1;
-    }
+    g_conn = ipc_base_connect(bus_address);
+    if (!g_conn) return -1;
 
-    dbus_bus_register(g_conn, &err);
-    if (dbus_error_is_set(&err)) {
-        fprintf(stderr, "[ipc_obd2] register failed: %s\n", err.message);
-        dbus_error_free(&err);
-        return -1;
-    }
-
-    const char *rule = "type='signal',interface='" OBD2_INTERFACE "'";
+    const char *rule = "type='signal',interface='" OBD2_IFACE_NAME "',member='" OBD2_SIGNAL_ENCODER "'";
     dbus_bus_add_match(g_conn, rule, &err);
     if (dbus_error_is_set(&err)) {
         fprintf(stderr, "[ipc_obd2] add_match failed: %s\n", err.message);
         dbus_error_free(&err);
-        return -1;
     }
 
     if (!dbus_connection_add_filter(g_conn, filter_cb, NULL, NULL)) {
         fprintf(stderr, "[ipc_obd2] add_filter failed\n");
+        dbus_connection_unref(g_conn);
+        g_conn = NULL;
         return -1;
     }
+
+    /* 监听 NameOwnerChanged 实现服务发现与重连 */
+    ipc_base_watch_service(g_conn, OBD2_SERVICE_NAME);
+
+    /* 等待 obd2_service 上线 */
+    if (ipc_base_wait_for_service(g_conn, OBD2_SERVICE_NAME, 25) == 0)
+        g_service_connected = 1;
+    else
+        fprintf(stderr, "[ipc_obd2] WARNING: obd2_service not found after 500ms\n");
 
     g_user_cb   = cb;
     g_user_data = user_data;
@@ -114,11 +129,7 @@ void ipc_obd2_dispatch(int timeout_ms)
 
 void ipc_obd2_deinit(void)
 {
-    if (g_conn) {
-        dbus_connection_remove_filter(g_conn, filter_cb, NULL);
-        dbus_connection_unref(g_conn);
-        g_conn = NULL;
-    }
+    ipc_base_disconnect(&g_conn, filter_cb);
     pthread_mutex_destroy(&g_data_mutex);
     printf("[ipc_obd2] deinitialized\n");
 }

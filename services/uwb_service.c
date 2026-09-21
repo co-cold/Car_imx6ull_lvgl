@@ -18,11 +18,7 @@
 #include <dbus/dbus.h>
 
 #include "uwb_driver.h"
-
-#define SERVICE_NAME   "com.lvgl.demo.UWB"
-#define OBJECT_PATH    "/com/lvgl/demo/UWB"
-#define INTERFACE_NAME "com.lvgl.demo.UWB"
-#define BUS_ADDRESS    "unix:path=/tmp/lvgl-dbus-session"
+#include "ipc/lvgl_dbus_protocol.h"
 #define DEFAULT_BAUD   460800
 
 static volatile int g_running = 1;
@@ -38,7 +34,7 @@ static void sig_handler(int sig)
 static void emit_uwb_signal(DBusConnection *conn, const Uwb_Data_t *data)
 {
     DBusMessage *msg = dbus_message_new_signal(
-        OBJECT_PATH, INTERFACE_NAME, "UwbDataUpdated");
+        UWB_OBJECT_PATH, UWB_IFACE_NAME, UWB_SIGNAL_DATA);
     if (!msg) return;
 
     uint32_t dist_mm      = data->distance_mm;
@@ -67,7 +63,7 @@ static void emit_uwb_signal(DBusConnection *conn, const Uwb_Data_t *data)
 static void emit_status_signal(DBusConnection *conn, const char *status)
 {
     DBusMessage *msg = dbus_message_new_signal(
-        OBJECT_PATH, INTERFACE_NAME, "StatusChanged");
+        UWB_OBJECT_PATH, UWB_IFACE_NAME, UWB_SIGNAL_STATUS);
     if (!msg) return;
     dbus_message_append_args(msg, DBUS_TYPE_STRING, &status, DBUS_TYPE_INVALID);
     dbus_connection_send(conn, msg, NULL);
@@ -119,7 +115,7 @@ int main(int argc, char *argv[])
     DBusError err;
     dbus_error_init(&err);
 
-    g_conn = dbus_connection_open(BUS_ADDRESS, &err);
+    g_conn = dbus_connection_open(PROTO_BUS_ADDRESS, &err);
     if (!g_conn || dbus_error_is_set(&err)) {
         fprintf(stderr, "[uwb_service] D-Bus connect failed: %s\n", err.message);
         dbus_error_free(&err);
@@ -133,7 +129,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    int ret = dbus_bus_request_name(g_conn, SERVICE_NAME,
+    int ret = dbus_bus_request_name(g_conn, UWB_SERVICE_NAME,
         DBUS_NAME_FLAG_DO_NOT_QUEUE, &err);
     if (dbus_error_is_set(&err)) {
         fprintf(stderr, "[uwb_service] request_name failed: %s\n", err.message);
@@ -145,13 +141,13 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if (!dbus_connection_register_object_path(g_conn, OBJECT_PATH,
+    if (!dbus_connection_register_object_path(g_conn, UWB_OBJECT_PATH,
             &g_vtable, NULL)) {
         fprintf(stderr, "[uwb_service] register object failed\n");
         return 1;
     }
 
-    printf("[uwb_service] D-Bus service registered: %s\n", SERVICE_NAME);
+    printf("[uwb_service] D-Bus service registered: %s\n", UWB_SERVICE_NAME);
 
     /* 首次尝试连接设备 */
     if (detected[0] == '\0') {

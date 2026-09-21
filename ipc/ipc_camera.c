@@ -5,6 +5,8 @@
  * 回调通知 UI 层进行解码和渲染。
  */
 #include "ipc_camera.h"
+#include "lvgl_dbus_protocol.h"
+#include "ipc_base.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -13,10 +15,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#define CAMERA_SERVICE_NAME "com.lvgl.demo.Camera"
-#define CAMERA_OBJECT_PATH  "/com/lvgl/demo/Camera"
-#define CAMERA_INTERFACE    "com.lvgl.demo.Camera"
-#define SHM_NAME            "/lvgl_camera_frame"
+#define SHM_NAME "/lvgl_camera_frame"
 
 static DBusConnection *g_conn = NULL;
 static int   g_shm_fd = -1;
@@ -24,15 +23,62 @@ static void *g_shm_ptr = NULL;
 static int   g_frame_size = 0;
 static ipc_camera_frame_cb_t g_user_cb = NULL;
 static void *g_user_data = NULL;
+static int   g_service_connected = 0;
 
 static DBusHandlerResult filter_cb(DBusConnection *conn, DBusMessage *msg, void *data)
 {
     (void)conn;
     (void)data;
 
-    if (dbus_message_is_signal(msg, CAMERA_INTERFACE, "FrameReady")) {
-        if (g_user_cb)
-            g_user_cb(g_user_data);
+    if (dbus_message_is_signal(msg, CAMERA_IFACE_NAME, CAMERA_SIGNAL_FRAME)) {
+        if (g_user_cb) {
+            dbus_uint32_t seq = 0, size = 0, width = 0, height = 0;
+            dbus_uint64_t timestamp = 0;
+            dbus_message_get_args(msg, NULL,
+                DBUS_TYPE_UINT32, &seq,
+                DBUS_TYPE_UINT32, &size,
+                DBUS_TYPE_UINT64, &timestamp,
+                DBUS_TYPE_UINT32, &width,
+                DBUS_TYPE_UINT32, &height,
+                DBUS_TYPE_INVALID);
+            g_user_cb(seq, size, timestamp, width, height, g_user_data);
+        }
+        return DBUS_HANDLER_RESULT_HANDLED;
+    }
+
+    /* 监听服务 NameOwnerChanged：camera_service 重启时自动重连共享内存 */
+    if (dbus_message_is_signal(msg, "org.freedesktop.DBus", "NameOwnerChanged")) {
+        const char *nm = NULL, *old_owner = NULL, *new_owner = NULL;
+        if (dbus_message_get_args(msg, NULL,
+                DBUS_TYPE_STRING, &nm,
+                DBUS_TYPE_STRING, &old_owner,
+                DBUS_TYPE_STRING, &new_owner,
+                DBUS_TYPE_INVALID)) {
+            if (nm && strcmp(nm, CAMERA_SERVICE_NAME) == 0) {
+                if (new_owner && new_owner[0] != '\0') {
+                    g_service_connected = 1;
+                    /* 重新打开共享内存（服务端可能重建了 shm 对象） */
+                    if (g_shm_ptr && g_shm_ptr != MAP_FAILED) {
+                        munmap(g_shm_ptr, g_frame_size);
+                        g_shm_ptr = NULL;
+                    }
+                    if (g_shm_fd >= 0) { close(g_shm_fd); g_shm_fd = -1; }
+                    g_shm_fd = shm_open(SHM_NAME, O_RDONLY, 0666);
+                    if (g_shm_fd >= 0) {
+                        g_shm_ptr = mmap(NULL, g_frame_size, PROT_READ,
+                                         MAP_SHARED, g_shm_fd, 0);
+                        if (g_shm_ptr == MAP_FAILED) {
+                            close(g_shm_fd);
+                            g_shm_fd = -1;
+                        }
+                    }
+                    printf("[ipc_camera] service appeared, shared memory reopened\n");
+                } else {
+                    g_service_connected = 0;
+                    printf("[ipc_camera] service disappeared\n");
+                }
+            }
+        }
         return DBUS_HANDLER_RESULT_HANDLED;
     }
 
@@ -48,32 +94,33 @@ int ipc_camera_init(const char *bus_address,
 
     g_frame_size = width * height * 2;
 
-    g_conn = dbus_connection_open(bus_address, &err);
-    if (!g_conn || dbus_error_is_set(&err)) {
-        fprintf(stderr, "[ipc_camera] connection failed: %s\n", err.message);
-        dbus_error_free(&err);
-        return -1;
-    }
+    g_conn = ipc_base_connect(bus_address);
+    if (!g_conn) return -1;
 
-    dbus_bus_register(g_conn, &err);
-    if (dbus_error_is_set(&err)) {
-        fprintf(stderr, "[ipc_camera] register failed: %s\n", err.message);
-        dbus_error_free(&err);
-        return -1;
-    }
-
-    const char *rule = "type='signal',interface='" CAMERA_INTERFACE "'";
+    const char *rule = "type='signal',interface='" CAMERA_IFACE_NAME "',member='" CAMERA_SIGNAL_FRAME "'";
     dbus_bus_add_match(g_conn, rule, &err);
     if (dbus_error_is_set(&err)) {
         fprintf(stderr, "[ipc_camera] add_match failed: %s\n", err.message);
         dbus_error_free(&err);
+        ipc_base_disconnect(&g_conn, NULL);
         return -1;
     }
 
+    /* 监听 NameOwnerChanged 实现服务发现与重连 */
+    ipc_base_watch_service(g_conn, CAMERA_SERVICE_NAME);
+
     if (!dbus_connection_add_filter(g_conn, filter_cb, NULL, NULL)) {
         fprintf(stderr, "[ipc_camera] add_filter failed\n");
+        dbus_connection_unref(g_conn);
+        g_conn = NULL;
         return -1;
     }
+
+    /* 等待 camera_service 上线 */
+    if (ipc_base_wait_for_service(g_conn, CAMERA_SERVICE_NAME, 25) == 0)
+        g_service_connected = 1;
+    else
+        fprintf(stderr, "[ipc_camera] WARNING: camera_service not found after 500ms\n");
 
     g_shm_fd = shm_open(SHM_NAME, O_RDONLY, 0666);
     if (g_shm_fd < 0) {
@@ -101,7 +148,7 @@ static int send_method(const char *method)
     if (!g_conn) return -1;
 
     DBusMessage *msg = dbus_message_new_method_call(
-        CAMERA_SERVICE_NAME, CAMERA_OBJECT_PATH, CAMERA_INTERFACE, method);
+        CAMERA_SERVICE_NAME, CAMERA_OBJECT_PATH, CAMERA_IFACE_NAME, method);
     if (!msg) return -1;
 
     dbus_connection_send(g_conn, msg, NULL);
@@ -123,12 +170,12 @@ int ipc_camera_start(void)
             }
         }
     }
-    return send_method("Start");
+    return send_method(CAMERA_METHOD_START);
 }
 
 int ipc_camera_stop(void)
 {
-    return send_method("Stop");
+    return send_method(CAMERA_METHOD_STOP);
 }
 
 int ipc_camera_get_frame(uint8_t *dst, int max_size)
@@ -152,10 +199,6 @@ void ipc_camera_deinit(void)
         munmap(g_shm_ptr, g_frame_size);
     if (g_shm_fd >= 0)
         close(g_shm_fd);
-    if (g_conn) {
-        dbus_connection_remove_filter(g_conn, filter_cb, NULL);
-        dbus_connection_unref(g_conn);
-        g_conn = NULL;
-    }
+    ipc_base_disconnect(&g_conn, filter_cb);
     printf("[ipc_camera] deinitialized\n");
 }

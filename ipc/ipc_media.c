@@ -5,6 +5,8 @@
  * 实现音乐播放/停止/暂停 + 视频帧回调。
  */
 #include "ipc_media.h"
+#include "lvgl_dbus_protocol.h"
+#include "ipc_base.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -14,10 +16,7 @@
 #include <fcntl.h>
 #include <dbus/dbus.h>
 
-#define MEDIA_SERVICE_NAME "com.lvgl.demo.Media"
-#define MEDIA_OBJECT_PATH  "/com/lvgl/demo/Media"
-#define MEDIA_INTERFACE    "com.lvgl.demo.Media"
-#define SHM_NAME           "/lvgl_video_frame"
+#define SHM_NAME "/lvgl_video_frame"
 
 static DBusConnection *g_conn = NULL;
 
@@ -34,21 +33,54 @@ static void *g_complete_user_data = NULL;
 static ipc_media_frame_cb_t g_frame_cb = NULL;
 static void *g_frame_user_data = NULL;
 
+/* 前向声明 */
+static int open_shm(void);
+
 /* ─── D-Bus 信号过滤器 ─── */
 static DBusHandlerResult filter_cb(DBusConnection *conn, DBusMessage *msg, void *data)
 {
     (void)conn;
     (void)data;
 
-    if (dbus_message_is_signal(msg, MEDIA_INTERFACE, "PlaybackComplete")) {
+    if (dbus_message_is_signal(msg, MEDIA_IFACE_NAME, MEDIA_SIGNAL_COMPLETE)) {
         if (g_complete_cb)
             g_complete_cb(g_complete_user_data);
         return DBUS_HANDLER_RESULT_HANDLED;
     }
 
-    if (dbus_message_is_signal(msg, MEDIA_INTERFACE, "FrameReady")) {
-        if (g_frame_cb)
-            g_frame_cb(g_frame_user_data);
+    if (dbus_message_is_signal(msg, MEDIA_IFACE_NAME, MEDIA_SIGNAL_FRAME)) {
+        if (g_frame_cb) {
+            dbus_uint32_t seq = 0, size = 0, width = 0, height = 0;
+            dbus_uint64_t timestamp = 0;
+            dbus_message_get_args(msg, NULL,
+                DBUS_TYPE_UINT32, &seq,
+                DBUS_TYPE_UINT32, &size,
+                DBUS_TYPE_UINT64, &timestamp,
+                DBUS_TYPE_UINT32, &width,
+                DBUS_TYPE_UINT32, &height,
+                DBUS_TYPE_INVALID);
+            g_frame_cb(seq, size, timestamp, width, height, g_frame_user_data);
+        }
+        return DBUS_HANDLER_RESULT_HANDLED;
+    }
+
+    /* 监听服务 NameOwnerChanged：media_service 重启时自动重连 */
+    if (dbus_message_is_signal(msg, "org.freedesktop.DBus", "NameOwnerChanged")) {
+        const char *nm = NULL, *old_owner = NULL, *new_owner = NULL;
+        if (dbus_message_get_args(msg, NULL,
+                DBUS_TYPE_STRING, &nm,
+                DBUS_TYPE_STRING, &old_owner,
+                DBUS_TYPE_STRING, &new_owner,
+                DBUS_TYPE_INVALID)) {
+            if (nm && strcmp(nm, MEDIA_SERVICE_NAME) == 0) {
+                if (new_owner && new_owner[0] != '\0') {
+                    printf("[ipc_media] service appeared, reopening shared memory\n");
+                    open_shm();
+                } else {
+                    printf("[ipc_media] service disappeared\n");
+                }
+            }
+        }
         return DBUS_HANDLER_RESULT_HANDLED;
     }
 
@@ -94,13 +126,24 @@ static int send_simple(const char *method)
     if (!g_conn) return -1;
 
     DBusMessage *msg = dbus_message_new_method_call(
-        MEDIA_SERVICE_NAME, MEDIA_OBJECT_PATH, MEDIA_INTERFACE, method);
+        MEDIA_SERVICE_NAME, MEDIA_OBJECT_PATH, MEDIA_IFACE_NAME, method);
     if (!msg) return -1;
 
-    dbus_connection_send(g_conn, msg, NULL);
-    dbus_connection_flush(g_conn);
+    DBusError err;
+    dbus_error_init(&err);
+    DBusMessage *reply = dbus_connection_send_with_reply_and_block(g_conn, msg, 5000, &err);
     dbus_message_unref(msg);
-    return 0;
+
+    if (!reply) {
+        fprintf(stderr, "[ipc_media] %s failed: %s\n", method, err.message);
+        dbus_error_free(&err);
+        return -1;
+    }
+
+    dbus_int32_t ret = -1;
+    dbus_message_get_args(reply, NULL, DBUS_TYPE_INT32, &ret, DBUS_TYPE_INVALID);
+    dbus_message_unref(reply);
+    return (ret == 0) ? 0 : -1;
 }
 
 static int send_string(const char *method, const char *arg)
@@ -108,14 +151,26 @@ static int send_string(const char *method, const char *arg)
     if (!g_conn) return -1;
 
     DBusMessage *msg = dbus_message_new_method_call(
-        MEDIA_SERVICE_NAME, MEDIA_OBJECT_PATH, MEDIA_INTERFACE, method);
+        MEDIA_SERVICE_NAME, MEDIA_OBJECT_PATH, MEDIA_IFACE_NAME, method);
     if (!msg) return -1;
 
     dbus_message_append_args(msg, DBUS_TYPE_STRING, &arg, DBUS_TYPE_INVALID);
-    dbus_connection_send(g_conn, msg, NULL);
-    dbus_connection_flush(g_conn);
+
+    DBusError err;
+    dbus_error_init(&err);
+    DBusMessage *reply = dbus_connection_send_with_reply_and_block(g_conn, msg, 5000, &err);
     dbus_message_unref(msg);
-    return 0;
+
+    if (!reply) {
+        fprintf(stderr, "[ipc_media] %s failed: %s\n", method, err.message);
+        dbus_error_free(&err);
+        return -1;
+    }
+
+    dbus_int32_t ret = -1;
+    dbus_message_get_args(reply, NULL, DBUS_TYPE_INT32, &ret, DBUS_TYPE_INVALID);
+    dbus_message_unref(reply);
+    return (ret == 0) ? 0 : -1;
 }
 
 static int send_string_uint_uint(const char *method, const char *s,
@@ -124,7 +179,7 @@ static int send_string_uint_uint(const char *method, const char *s,
     if (!g_conn) return -1;
 
     DBusMessage *msg = dbus_message_new_method_call(
-        MEDIA_SERVICE_NAME, MEDIA_OBJECT_PATH, MEDIA_INTERFACE, method);
+        MEDIA_SERVICE_NAME, MEDIA_OBJECT_PATH, MEDIA_IFACE_NAME, method);
     if (!msg) return -1;
 
     dbus_message_append_args(msg,
@@ -132,10 +187,22 @@ static int send_string_uint_uint(const char *method, const char *s,
         DBUS_TYPE_UINT32, &u1,
         DBUS_TYPE_UINT32, &u2,
         DBUS_TYPE_INVALID);
-    dbus_connection_send(g_conn, msg, NULL);
-    dbus_connection_flush(g_conn);
+
+    DBusError err;
+    dbus_error_init(&err);
+    DBusMessage *reply = dbus_connection_send_with_reply_and_block(g_conn, msg, 5000, &err);
     dbus_message_unref(msg);
-    return 0;
+
+    if (!reply) {
+        fprintf(stderr, "[ipc_media] %s failed: %s\n", method, err.message);
+        dbus_error_free(&err);
+        return -1;
+    }
+
+    dbus_int32_t ret = -1;
+    dbus_message_get_args(reply, NULL, DBUS_TYPE_INT32, &ret, DBUS_TYPE_INVALID);
+    dbus_message_unref(reply);
+    return (ret == 0) ? 0 : -1;
 }
 
 static int send_double(const char *method, double val)
@@ -143,14 +210,26 @@ static int send_double(const char *method, double val)
     if (!g_conn) return -1;
 
     DBusMessage *msg = dbus_message_new_method_call(
-        MEDIA_SERVICE_NAME, MEDIA_OBJECT_PATH, MEDIA_INTERFACE, method);
+        MEDIA_SERVICE_NAME, MEDIA_OBJECT_PATH, MEDIA_IFACE_NAME, method);
     if (!msg) return -1;
 
     dbus_message_append_args(msg, DBUS_TYPE_DOUBLE, &val, DBUS_TYPE_INVALID);
-    dbus_connection_send(g_conn, msg, NULL);
-    dbus_connection_flush(g_conn);
+
+    DBusError err;
+    dbus_error_init(&err);
+    DBusMessage *reply = dbus_connection_send_with_reply_and_block(g_conn, msg, 5000, &err);
     dbus_message_unref(msg);
-    return 0;
+
+    if (!reply) {
+        fprintf(stderr, "[ipc_media] %s failed: %s\n", method, err.message);
+        dbus_error_free(&err);
+        return -1;
+    }
+
+    dbus_int32_t ret = -1;
+    dbus_message_get_args(reply, NULL, DBUS_TYPE_INT32, &ret, DBUS_TYPE_INVALID);
+    dbus_message_unref(reply);
+    return (ret == 0) ? 0 : -1;
 }
 
 static int call_int(const char *method, int *out)
@@ -158,7 +237,7 @@ static int call_int(const char *method, int *out)
     if (!g_conn) return -1;
 
     DBusMessage *msg = dbus_message_new_method_call(
-        MEDIA_SERVICE_NAME, MEDIA_OBJECT_PATH, MEDIA_INTERFACE, method);
+        MEDIA_SERVICE_NAME, MEDIA_OBJECT_PATH, MEDIA_IFACE_NAME, method);
     if (!msg) return -1;
 
     DBusError err;
@@ -186,7 +265,7 @@ static int call_double(const char *method, double *out)
     if (!g_conn) return -1;
 
     DBusMessage *msg = dbus_message_new_method_call(
-        MEDIA_SERVICE_NAME, MEDIA_OBJECT_PATH, MEDIA_INTERFACE, method);
+        MEDIA_SERVICE_NAME, MEDIA_OBJECT_PATH, MEDIA_IFACE_NAME, method);
     if (!msg) return -1;
 
     DBusError err;
@@ -215,65 +294,36 @@ int ipc_media_init(const char *bus_address)
     DBusError err;
     dbus_error_init(&err);
 
-    g_conn = dbus_connection_open(bus_address, &err);
-    if (!g_conn || dbus_error_is_set(&err)) {
-        fprintf(stderr, "[ipc_media] connection failed: %s\n", err.message);
-        dbus_error_free(&err);
-        return -1;
+    g_conn = ipc_base_connect(bus_address);
+    if (!g_conn) return -1;
+
+    const char *rules[] = {
+        "type='signal',interface='" MEDIA_IFACE_NAME "',member='" MEDIA_SIGNAL_FRAME "'",
+        "type='signal',interface='" MEDIA_IFACE_NAME "',member='" MEDIA_SIGNAL_COMPLETE "'"
+    };
+    for (int i = 0; i < 2; ++i) {
+        dbus_bus_add_match(g_conn, rules[i], &err);
+        if (dbus_error_is_set(&err)) {
+            fprintf(stderr, "[ipc_media] add_match[%d] failed: %s\n", i, err.message);
+            dbus_error_free(&err);
+        }
     }
 
-    dbus_bus_register(g_conn, &err);
-    if (dbus_error_is_set(&err)) {
-        fprintf(stderr, "[ipc_media] register failed: %s\n", err.message);
-        dbus_error_free(&err);
-        return -1;
-    }
-
-    const char *rule = "type='signal',interface='" MEDIA_INTERFACE "'";
-    dbus_bus_add_match(g_conn, rule, &err);
-    if (dbus_error_is_set(&err)) {
-        fprintf(stderr, "[ipc_media] add_match failed: %s\n", err.message);
-        dbus_error_free(&err);
-    }
+    /* 监听 NameOwnerChanged 实现服务发现与重连 */
+    ipc_base_watch_service(g_conn, MEDIA_SERVICE_NAME);
 
     if (!dbus_connection_add_filter(g_conn, filter_cb, NULL, NULL)) {
         fprintf(stderr, "[ipc_media] add_filter failed\n");
+        dbus_connection_unref(g_conn);
+        g_conn = NULL;
         return -1;
     }
 
     printf("[ipc_media] initialized\n");
 
     /* 等待 media_service 注册 D-Bus 服务名 */
-    {
-        int retries = 0;
-        while (retries < 25) {
-            DBusMessage *m = dbus_message_new_method_call(
-                "org.freedesktop.DBus", "/org/freedesktop/DBus",
-                "org.freedesktop.DBus", "NameHasOwner");
-            if (m) {
-                const char *name = MEDIA_SERVICE_NAME;
-                dbus_message_append_args(m, DBUS_TYPE_STRING, &name, DBUS_TYPE_INVALID);
-                DBusError e;
-                dbus_error_init(&e);
-                DBusMessage *r = dbus_connection_send_with_reply_and_block(g_conn, m, 50, &e);
-                if (r) {
-                    dbus_bool_t has_owner = FALSE;
-                    dbus_message_get_args(r, &e, DBUS_TYPE_BOOLEAN, &has_owner, DBUS_TYPE_INVALID);
-                    dbus_message_unref(r);
-                    if (has_owner) {
-                        dbus_message_unref(m);
-                        break;
-                    }
-                }
-                dbus_error_free(&e);
-                dbus_message_unref(m);
-            }
-            usleep(20000);
-            retries++;
-        }
-        if (retries >= 25)
-            fprintf(stderr, "[ipc_media] WARNING: media_service not found after 500ms\n");
-    }
+    if (ipc_base_wait_for_service(g_conn, MEDIA_SERVICE_NAME, 25) != 0)
+        fprintf(stderr, "[ipc_media] WARNING: media_service not found after 500ms\n");
 
     return 0;
 }
@@ -287,11 +337,7 @@ void ipc_media_deinit(void)
     g_shm_ptr = NULL;
     g_shm_fd = -1;
 
-    if (g_conn) {
-        dbus_connection_remove_filter(g_conn, filter_cb, NULL);
-        dbus_connection_unref(g_conn);
-        g_conn = NULL;
-    }
+    ipc_base_disconnect(&g_conn, filter_cb);
     printf("[ipc_media] deinitialized\n");
 }
 
@@ -316,13 +362,13 @@ void ipc_media_set_frame_callback(ipc_media_frame_cb_t cb, void *user_data)
 /* ─── 音频播放 ─── */
 int ipc_media_play_audio(const char *file)
 {
-    return send_string("PlayAudio", file);
+    return send_string(MEDIA_METHOD_PLAY_AUDIO, file);
 }
 
-int ipc_media_pause(void)          { return send_simple("Pause"); }
-int ipc_media_resume(void)         { return send_simple("Resume"); }
-int ipc_media_stop(void)           { return send_simple("Stop"); }
-int ipc_media_seek(double seconds) { return send_double("Seek", seconds); }
+int ipc_media_pause(void)          { return send_simple(MEDIA_METHOD_PAUSE); }
+int ipc_media_resume(void)         { return send_simple(MEDIA_METHOD_RESUME); }
+int ipc_media_stop(void)           { return send_simple(MEDIA_METHOD_STOP); }
+int ipc_media_seek(double seconds) { return send_double(MEDIA_METHOD_SEEK, seconds); }
 
 /* ─── 视频播放 ─── */
 int ipc_media_play_video(const char *file, int width, int height)
@@ -334,7 +380,7 @@ int ipc_media_play_video(const char *file, int width, int height)
      * 两边复用同一个共享内存对象，避免竞态条件导致 UI 侧
      * 打开旧对象后永远读不到新数据。 */
 
-    return send_string_uint_uint("PlayVideo", file, (uint32_t)width, (uint32_t)height);
+    return send_string_uint_uint(MEDIA_METHOD_PLAY_VIDEO, file, (uint32_t)width, (uint32_t)height);
 }
 
 /* ─── 合并查询：一次 D-Bus 调用返回 state + position + duration ─── */
@@ -343,7 +389,7 @@ int ipc_media_get_playback_info(int *state, double *position, double *duration)
     if (!g_conn) return -1;
 
     DBusMessage *msg = dbus_message_new_method_call(
-        MEDIA_SERVICE_NAME, MEDIA_OBJECT_PATH, MEDIA_INTERFACE, "GetPlaybackInfo");
+        MEDIA_SERVICE_NAME, MEDIA_OBJECT_PATH, MEDIA_IFACE_NAME, MEDIA_METHOD_GET_INFO);
     if (!msg) return -1;
 
     DBusError err;

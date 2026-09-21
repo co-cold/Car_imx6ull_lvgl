@@ -13,11 +13,7 @@
 #include <dbus/dbus.h>
 
 #include "mpu6050_drv.h"
-
-#define SERVICE_NAME   "com.lvgl.demo.MPU6050"
-#define OBJECT_PATH    "/com/lvgl/demo/MPU6050"
-#define INTERFACE_NAME "com.lvgl.demo.MPU6050"
-#define BUS_ADDRESS    "unix:path=/tmp/lvgl-dbus-session"
+#include "ipc/lvgl_dbus_protocol.h"
 #define DEFAULT_DEVICE "/dev/I2C1_mpu6050"
 
 static volatile int g_running = 1;
@@ -33,7 +29,7 @@ static void sig_handler(int sig)
 static void emit_mpu6050_signal(DBusConnection *conn, const Mpu6050_Data_t *data)
 {
     DBusMessage *msg = dbus_message_new_signal(
-        OBJECT_PATH, INTERFACE_NAME, "Mpu6050DataUpdated");
+        MPU6050_OBJECT_PATH, MPU6050_IFACE_NAME, MPU6050_SIGNAL_DATA);
     if (!msg) return;
 
     double ax_mss  = data->ax_mss;
@@ -110,7 +106,7 @@ int main(int argc, char *argv[])
     DBusError err;
     dbus_error_init(&err);
 
-    g_conn = dbus_connection_open(BUS_ADDRESS, &err);
+    g_conn = dbus_connection_open(PROTO_BUS_ADDRESS, &err);
     if (!g_conn || dbus_error_is_set(&err)) {
         fprintf(stderr, "[mpu6050_service] D-Bus connect failed: %s\n", err.message);
         dbus_error_free(&err);
@@ -124,7 +120,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    int ret = dbus_bus_request_name(g_conn, SERVICE_NAME,
+    int ret = dbus_bus_request_name(g_conn, MPU6050_SERVICE_NAME,
         DBUS_NAME_FLAG_DO_NOT_QUEUE, &err);
     if (dbus_error_is_set(&err)) {
         fprintf(stderr, "[mpu6050_service] request_name failed: %s\n", err.message);
@@ -136,13 +132,13 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if (!dbus_connection_register_object_path(g_conn, OBJECT_PATH,
+    if (!dbus_connection_register_object_path(g_conn, MPU6050_OBJECT_PATH,
             &g_vtable, NULL)) {
         fprintf(stderr, "[mpu6050_service] register object failed\n");
         return 1;
     }
 
-    printf("[mpu6050_service] D-Bus service registered: %s\n", SERVICE_NAME);
+    printf("[mpu6050_service] D-Bus service registered: %s\n", MPU6050_SERVICE_NAME);
 
     Mpu6050_Data_t last_data;
     int            last_valid = 0;

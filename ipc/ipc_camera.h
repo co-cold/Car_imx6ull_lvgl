@@ -17,7 +17,8 @@
 #include <stdint.h>
 #include <dbus/dbus.h>
 
-typedef void (*ipc_camera_frame_cb_t)(void *user_data);
+typedef void (*ipc_camera_frame_cb_t)(uint32_t seq, uint32_t size, uint64_t timestamp,
+                                      uint32_t width, uint32_t height, void *user_data);
 
 int ipc_camera_init(const char *bus_address,
                     int width, int height,

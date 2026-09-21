@@ -5,26 +5,42 @@
  * 回调通知上层进行姿态解算和驾驶行为统计。
  */
 #include "ipc_mpu6050.h"
+#include "lvgl_dbus_protocol.h"
+#include "ipc_base.h"
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-
-#define MPU6050_SERVICE_NAME  "com.lvgl.demo.MPU6050"
-#define MPU6050_OBJECT_PATH   "/com/lvgl/demo/MPU6050"
-#define MPU6050_INTERFACE     "com.lvgl.demo.MPU6050"
 
 static DBusConnection        *g_conn = NULL;
 static Mpu6050_Data_t         g_data;
 static pthread_mutex_t        g_data_mutex = PTHREAD_MUTEX_INITIALIZER;
 static ipc_mpu6050_data_cb_t  g_user_cb = NULL;
 static void                  *g_user_data = NULL;
+static int                    g_service_connected = 0;
 
 static DBusHandlerResult filter_cb(DBusConnection *conn, DBusMessage *msg, void *data)
 {
     (void)conn;
     (void)data;
 
-    if (!dbus_message_is_signal(msg, MPU6050_INTERFACE, "Mpu6050DataUpdated"))
+    /* 监听服务 NameOwnerChanged 实现服务发现与重连 */
+    if (dbus_message_is_signal(msg, "org.freedesktop.DBus", "NameOwnerChanged")) {
+        const char *nm = NULL, *old_owner = NULL, *new_owner = NULL;
+        if (dbus_message_get_args(msg, NULL,
+                DBUS_TYPE_STRING, &nm,
+                DBUS_TYPE_STRING, &old_owner,
+                DBUS_TYPE_STRING, &new_owner,
+                DBUS_TYPE_INVALID)) {
+            if (nm && strcmp(nm, MPU6050_SERVICE_NAME) == 0) {
+                g_service_connected = (new_owner && new_owner[0] != '\0') ? 1 : 0;
+                printf("[ipc_mpu6050] service %s\n",
+                       g_service_connected ? "appeared" : "disappeared");
+            }
+        }
+        return DBUS_HANDLER_RESULT_HANDLED;
+    }
+
+    if (!dbus_message_is_signal(msg, MPU6050_IFACE_NAME, MPU6050_SIGNAL_DATA))
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 
     DBusError err;
@@ -80,32 +96,31 @@ int ipc_mpu6050_init(const char *bus_address,
     DBusError err;
     dbus_error_init(&err);
 
-    g_conn = dbus_connection_open(bus_address, &err);
-    if (!g_conn || dbus_error_is_set(&err)) {
-        fprintf(stderr, "[ipc_mpu6050] connection failed: %s\n", err.message);
-        dbus_error_free(&err);
-        return -1;
-    }
+    g_conn = ipc_base_connect(bus_address);
+    if (!g_conn) return -1;
 
-    dbus_bus_register(g_conn, &err);
-    if (dbus_error_is_set(&err)) {
-        fprintf(stderr, "[ipc_mpu6050] register failed: %s\n", err.message);
-        dbus_error_free(&err);
-        return -1;
-    }
-
-    const char *rule = "type='signal',interface='" MPU6050_INTERFACE "'";
+    const char *rule = "type='signal',interface='" MPU6050_IFACE_NAME "',member='" MPU6050_SIGNAL_DATA "'";
     dbus_bus_add_match(g_conn, rule, &err);
     if (dbus_error_is_set(&err)) {
         fprintf(stderr, "[ipc_mpu6050] add_match failed: %s\n", err.message);
         dbus_error_free(&err);
-        return -1;
     }
 
     if (!dbus_connection_add_filter(g_conn, filter_cb, NULL, NULL)) {
         fprintf(stderr, "[ipc_mpu6050] add_filter failed\n");
+        dbus_connection_unref(g_conn);
+        g_conn = NULL;
         return -1;
     }
+
+    /* 监听 NameOwnerChanged 实现服务发现与重连 */
+    ipc_base_watch_service(g_conn, MPU6050_SERVICE_NAME);
+
+    /* 等待 mpu6050_service 上线 */
+    if (ipc_base_wait_for_service(g_conn, MPU6050_SERVICE_NAME, 25) == 0)
+        g_service_connected = 1;
+    else
+        fprintf(stderr, "[ipc_mpu6050] WARNING: mpu6050_service not found after 500ms\n");
 
     g_user_cb   = cb;
     g_user_data = user_data;
@@ -131,11 +146,7 @@ void ipc_mpu6050_dispatch(int timeout_ms)
 
 void ipc_mpu6050_deinit(void)
 {
-    if (g_conn) {
-        dbus_connection_remove_filter(g_conn, filter_cb, NULL);
-        dbus_connection_unref(g_conn);
-        g_conn = NULL;
-    }
+    ipc_base_disconnect(&g_conn, filter_cb);
     pthread_mutex_destroy(&g_data_mutex);
     printf("[ipc_mpu6050] deinitialized\n");
 }

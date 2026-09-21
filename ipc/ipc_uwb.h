@@ -16,11 +16,16 @@
 #include "uwb_driver.h"
 
 typedef void (*ipc_uwb_data_cb_t)(const Uwb_Data_t *data, void *user_data);
+typedef void (*ipc_uwb_status_cb_t)(int connected, void *user_data);
 
 int  ipc_uwb_init(const char *bus_address,
-                  ipc_uwb_data_cb_t cb, void *user_data);
+                  ipc_uwb_data_cb_t data_cb, void *user_data);
 
 int  ipc_uwb_get_data(Uwb_Data_t *data);
+
+int  ipc_uwb_is_connected(void);
+
+void ipc_uwb_set_status_callback(ipc_uwb_status_cb_t cb, void *user_data);
 
 void ipc_uwb_dispatch(int timeout_ms);
 

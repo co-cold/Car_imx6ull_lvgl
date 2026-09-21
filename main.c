@@ -16,17 +16,16 @@
 #include "events_init.h"                // 包含事件初始化相关函数声明
 #include "custom.h"                     // 包含自定义功能相关函数声明
 
-#include "ipc/ipc_can.h"
 #include "ipc/ipc_camera.h"
 #include "ipc/ipc_media.h"
 #include "ipc/ipc_uwb.h"
 #include "ipc/ipc_mpu6050.h"
 #include "ipc/ipc_audio.h"
 
+#include "ipc/lvgl_dbus_protocol.h"
+
 #define CUSTOM_MEM_TRACE_ENABLE 1
 #include "ui/custom/custom_mem_trace.h"
-
-#define CAN_BUS_ADDRESS "unix:path=/tmp/lvgl-dbus-session"
 
 lv_ui guider_ui;                        // 声明GUI Guider生成的UI结构体实例
 
@@ -135,12 +134,6 @@ static void reap_child(int sig)
     while (waitpid(-1, NULL, WNOHANG) > 0);
 }
 
-static void on_encoder_update(const Encoder_Data_t *enc, void *user_data)
-{
-    (void)enc;
-    (void)user_data;
-}
-
 int main(int argc, char *argv[])
 {
     lvgl_init();
@@ -154,19 +147,15 @@ int main(int argc, char *argv[])
     launch_mpu6050_service();
     launch_audio_service();
 
-    if (ipc_can_init(CAN_BUS_ADDRESS, on_encoder_update, NULL) != 0) {
-        fprintf(stderr, "[main] IPC CAN init failed, running without OBD-II\n");
-    }
-
-    if (ipc_uwb_init(CAN_BUS_ADDRESS, NULL, NULL) != 0) {
+    if (ipc_uwb_init(PROTO_BUS_ADDRESS, NULL, NULL) != 0) {
         fprintf(stderr, "[main] IPC UWB init failed, running without UWB\n");
     }
 
-    if (ipc_audio_init(CAN_BUS_ADDRESS) != 0) {
+    if (ipc_audio_init(PROTO_BUS_ADDRESS) != 0) {
         fprintf(stderr, "[main] IPC Audio init failed, running without audio control\n");
     }
 
-    if (ipc_mpu6050_init(CAN_BUS_ADDRESS, NULL, NULL) != 0) {
+    if (ipc_mpu6050_init(PROTO_BUS_ADDRESS, NULL, NULL) != 0) {
         fprintf(stderr, "[main] IPC MPU6050 init failed, running without MPU6050\n");
     }
 
@@ -181,7 +170,6 @@ int main(int argc, char *argv[])
     /*Handle LitlevGL tasks (tickless mode)*/
     while(1) {
         lv_timer_handler();
-        ipc_can_dispatch(0);
         ipc_camera_dispatch(0);
         ipc_media_dispatch(0);
         ipc_uwb_dispatch(0);
@@ -190,7 +178,6 @@ int main(int argc, char *argv[])
         usleep(5000);
     }
 
-    ipc_can_deinit();
     ipc_camera_deinit();
     ipc_uwb_deinit();
     ipc_mpu6050_deinit();

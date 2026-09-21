@@ -28,7 +28,7 @@
 #define VIDEO_WIDTH 800
 #define VIDEO_HEIGHT 450
 
-#define BUS_ADDRESS "unix:path=/tmp/lvgl-dbus-session"
+#include "ipc/lvgl_dbus_protocol.h"
 
 // 媒体播放上下文结构体
 typedef struct {
