@@ -18,8 +18,9 @@
 
 #include "ipc/ipc_camera.h"
 #include "ipc/ipc_media.h"
-#include "ipc/ipc_uwb.h"
-#include "ipc/ipc_mpu6050.h"
+// TODO: 驾校辅助系统 UI 完成后，通过 app 开关来启用
+// #include "ipc/ipc_uwb.h"
+// #include "ipc/ipc_mpu6050.h"
 #include "ipc/ipc_audio.h"
 
 #include "ipc/lvgl_dbus_protocol.h"
@@ -142,22 +143,24 @@ int main(int argc, char *argv[])
 
     signal(SIGCHLD, reap_child);
 
-    launch_obd2_service();
-    launch_uwb_service();
-    launch_mpu6050_service();
     launch_audio_service();
 
-    if (ipc_uwb_init(PROTO_BUS_ADDRESS, NULL, NULL) != 0) {
-        fprintf(stderr, "[main] IPC UWB init failed, running without UWB\n");
-    }
+    /* TODO: 驾校辅助系统 UI 完成后通过 app 开关来启用 */
+    // launch_obd2_service();
+    // launch_uwb_service();
+    // launch_mpu6050_service();
+
+    // if (ipc_uwb_init(PROTO_BUS_ADDRESS, NULL, NULL) != 0) {
+    //     fprintf(stderr, "[main] IPC UWB init failed, running without UWB\n");
+    // }
 
     if (ipc_audio_init(PROTO_BUS_ADDRESS) != 0) {
         fprintf(stderr, "[main] IPC Audio init failed, running without audio control\n");
     }
 
-    if (ipc_mpu6050_init(PROTO_BUS_ADDRESS, NULL, NULL) != 0) {
-        fprintf(stderr, "[main] IPC MPU6050 init failed, running without MPU6050\n");
-    }
+    // if (ipc_mpu6050_init(PROTO_BUS_ADDRESS, NULL, NULL) != 0) {
+    //     fprintf(stderr, "[main] IPC MPU6050 init failed, running without MPU6050\n");
+    // }
 
     /* Initialize extra libraries (PNG, JPEG, etc.) */
     lv_extra_init();
@@ -172,15 +175,15 @@ int main(int argc, char *argv[])
         lv_timer_handler();
         ipc_camera_dispatch(0);
         ipc_media_dispatch(0);
-        ipc_uwb_dispatch(0);
-        ipc_mpu6050_dispatch(0);
+        // ipc_uwb_dispatch(0);
+        // ipc_mpu6050_dispatch(0);
         ipc_audio_dispatch(0);
         usleep(5000);
     }
 
     ipc_camera_deinit();
-    ipc_uwb_deinit();
-    ipc_mpu6050_deinit();
+    // ipc_uwb_deinit();
+    // ipc_mpu6050_deinit();
     ipc_audio_deinit();
     return 0;
 }

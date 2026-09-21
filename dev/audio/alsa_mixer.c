@@ -94,18 +94,51 @@ int alsa_mixer_set_volume(alsa_mixer_t *am, float volume)
     if (volume > 1.0f) volume = 1.0f;
     am->volume = volume;
 
-    /* cubic curve for perceptual compensation */
-    float curve = powf(volume, 1.0f / 3.0f);
-    int vol_pct = (int)(curve * 100.0f);
-    if (vol_pct > 0 && vol_pct < 20) vol_pct = 20;
-    if (vol_pct > 100) vol_pct = 100;
-
-    /* main volume control (Playback on imx6ull+WM8960) */
-    if (am->elem) {
-        long hw = am->vol_min + (am->vol_max - am->vol_min) * vol_pct / 100;
-        snd_mixer_selem_set_playback_volume_all(am->elem, hw);
+    /* DAPM路径兜底 — 每次调音量都重新打开，防止硬件断电 */
+    const char *dapm_ctrls[] = {"Right Output Mixer PCM", "Left Output Mixer PCM", NULL};
+    for (int i = 0; dapm_ctrls[i]; i++) {
+        snd_mixer_selem_id_t *sid;
+        snd_mixer_selem_id_alloca(&sid);
+        snd_mixer_selem_id_set_name(sid, dapm_ctrls[i]);
+        snd_mixer_elem_t *e = snd_mixer_find_selem(am->mixer, sid);
+        if (e) snd_mixer_selem_set_playback_switch_all(e, 1);
     }
 
+    /* Playback数字音量固定85%，永不静音DAC */
+    {
+        snd_mixer_selem_id_t *sid;
+        snd_mixer_selem_id_alloca(&sid);
+        snd_mixer_selem_id_set_name(sid, "Playback");
+        snd_mixer_elem_t *e = snd_mixer_find_selem(am->mixer, sid);
+        if (e) {
+            long min, max;
+            snd_mixer_selem_get_playback_volume_range(e, &min, &max);
+            long hw = min + (max - min) * 85 / 100;
+            snd_mixer_selem_set_playback_volume_all(e, hw);
+        }
+    }
+
+    /* cubic curve -> Headphone / Speaker 硬件放大器 */
+    float curve = powf(volume, 1.0f / 3.0f);
+    int vol_pct = (int)(curve * 100.0f);
+    if (vol_pct >= 0 && vol_pct < 20) vol_pct = 20;
+    if (vol_pct > 100) vol_pct = 100;
+
+    const char *hw_ctrls[] = {"Headphone", "Speaker", NULL};
+    for (int i = 0; hw_ctrls[i]; i++) {
+        snd_mixer_selem_id_t *sid;
+        snd_mixer_selem_id_alloca(&sid);
+        snd_mixer_selem_id_set_name(sid, hw_ctrls[i]);
+        snd_mixer_elem_t *e = snd_mixer_find_selem(am->mixer, sid);
+        if (e) {
+            long min, max;
+            snd_mixer_selem_get_playback_volume_range(e, &min, &max);
+            long hw = min + (max - min) * vol_pct / 100;
+            snd_mixer_selem_set_playback_volume_all(e, hw);
+        }
+    }
+
+    snd_mixer_handle_events(am->mixer);
     return 0;
 }
 

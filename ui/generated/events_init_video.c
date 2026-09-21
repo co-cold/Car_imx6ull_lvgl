@@ -158,7 +158,7 @@ static void screen_video_btn_back_event_handler (lv_event_t *e)
         LOGD("视频返回主页: LVGL 任务处理完成\n");
 
         LOGD("视频返回主页: 开始屏幕切换...\n");
-        ui_load_scr_animation(&guider_ui, &guider_ui.screen_home, guider_ui.screen_home_del, &guider_ui.screen_video_del, setup_scr_screen_home, LV_SCR_LOAD_ANIM_FADE_ON, 200, 200, false, false);
+        ui_load_scr_animation(&guider_ui, &guider_ui.screen_home, guider_ui.screen_home_del, &guider_ui.screen_video_del, setup_scr_screen_home, LV_SCR_LOAD_ANIM_FADE_ON, 200, 200, false, true);
         LOGD("视频返回主页: 屏幕切换完成\n");
         break;
     }

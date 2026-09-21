@@ -195,8 +195,9 @@ int main(int argc, char *argv[])
             }
             reconnect_delay++;
 
-            /* 每 2 秒尝试一次重连 */
-            if (reconnect_delay >= 40) {  /* 40 * 50ms = 2s */
+            /* 前 10 次每 2s 重试，之后降频到每 5s */
+            int interval = (reconnect_delay / 40) < 10 ? 40 : 100;
+            if (reconnect_delay >= interval) {
                 if (detected[0] != '\0' &&
                     uwb_drv_reconnect(&g_uwb_drv, detected, baudrate) == 0) {
                     emit_status_signal(g_conn, "connected");
@@ -212,7 +213,8 @@ int main(int argc, char *argv[])
                         reconnect_delay = 0;
                         last_valid = 0;
                     } else {
-                        reconnect_delay = 39;  /* 继续重试 */
+                        /* 重置为 0，重新计时 */
+                        reconnect_delay = 0;
                     }
                 }
             }

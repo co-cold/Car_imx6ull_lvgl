@@ -174,12 +174,12 @@ void custom_media_cleanup_screen(void) {
         LOGD("custom_media_cleanup_screen: 进度定时器已暂停\n");
     }
 
-    if (ctx->play_mode == 1 && ctx->ui && ctx->ui->screen_video_img_video) {
+    if (ctx->play_mode == 1 && !guider_ui.screen_video_del && ctx->ui && ctx->ui->screen_video_img_video) {
         lv_img_set_src(ctx->ui->screen_video_img_video, &_noVideo_alpha_800x450);
     }
 
     /* 退出时重置音乐封面为默认，避免 cover_dsc 野指针导致乱码 */
-    if (ctx->ui && ctx->ui->screen_music_img_music) {
+    if (!guider_ui.screen_music_del && ctx->ui && ctx->ui->screen_music_img_music) {
         lv_img_set_src(ctx->ui->screen_music_img_music, &_1725420839434_alpha_250x250);
     }
 
